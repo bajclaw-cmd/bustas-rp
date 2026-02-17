@@ -6,6 +6,7 @@
 @using System;
 @using global::Entity.Interactable.Printer
 @using global::Entity.Interactable.Props
+@using global::Entity.Vehicle
 @using global::GameSystems
 @using global::GameSystems.Jobs
 @using Sandbox.Entities.Interactable.Props
@@ -32,6 +33,9 @@
                     </button>
                     <button class="button @(IsDarkWebVisible ? "active" : "")" onclick="@DisplayDarkWeb">
                         <i class="icon">store</i> Dark Web
+                    </button>
+                    <button class="button @(IsVehiclesVisible ? "active" : "")" onclick="@DisplayVehicles">
+                        <i class="icon">directions_car</i> Vehicles
                     </button>
                     <button class="button @(IsPropsVisible ? "active" : "")" onclick="@DisplayProps">
                         <i class="icon">folder</i> Props
@@ -103,6 +107,30 @@
                             <div class="price">$@(BustasConfig.PrinterEmeraldCost.ToString("N0"))</div>
                         </div>
                     </div>
+
+                </div>
+            </div>
+
+            <!-- Vehicles Section -->
+            <div class="section" style="display: @(IsVehiclesVisible ? "flex" : "none");">
+                <div class="section-title">Vehicles (@CurrentVehicleCount / @BustasConfig.MaxVehiclesPerPlayer)</div>
+                <div class="section-contents">
+
+                    @foreach (var kvp in VehicleConfigs.All)
+                    {
+                        var config = kvp.Value;
+                        var canUse = CanUseVehicle(config);
+                        var restrictionLabel = GetVehicleRestriction(config);
+
+                        <div class="button @(!canUse ? "disabled" : "")" onclick=@(() => SpawnVehicle(kvp.Key)) style="opacity: @(!canUse ? "0.5" : "1")">
+                            <div class="icon" style="background-color: rgba(@(config.DisplayColor.r * 255), @(config.DisplayColor.g * 255), @(config.DisplayColor.b * 255), 1)"></div>
+                            <div class="label-container">
+                                <div class="label">@config.DisplayName @(restrictionLabel)</div>
+                                <span class="description">Speed: @config.SpeedLabel | Health: @config.HealthLabel</span>
+                                <div class="price">@(config.IsFree ? "FREE" : $"${config.Cost:N0}")</div>
+                            </div>
+                        </div>
+                    }
 
                 </div>
             </div>
@@ -221,10 +249,14 @@
 
 @code {
     [Property] GameObject PrinterPrefab { get; set; }
+    [Property] GameObject VehiclePrefab { get; set; }
     [Property] Player Player { get; set; }
 
     // Printer tracking
     int CurrentPrinter = 0;
+
+    // Vehicle tracking
+    int CurrentVehicleCount => VehicleManager.GetVehicleCount(Player?.Network?.OwnerId ?? Guid.Empty);
 
     void BuyPrinter(PrinterLogic.PrinterType type)
     {
@@ -451,7 +483,8 @@
          IsJobsVisible = true,
          IsInfoVisible = false,
          IsAdminVisible = false,
-         IsPropsVisible = false;
+         IsPropsVisible = false,
+         IsVehiclesVisible = false;
 
     void DisplaySection(string section)
     {
@@ -460,6 +493,7 @@
         IsInfoVisible = section == "Info";
         IsAdminVisible = section == "Admin";
         IsPropsVisible = section == "Props";
+        IsVehiclesVisible = section == "Vehicles";
 
         Sound.Play("audio/select.sound");
     }
@@ -469,6 +503,80 @@
     void DisplayInfo() { DisplaySection("Info"); }
     void DisplayAdmin() { DisplaySection("Admin"); }
     void DisplayProps() { DisplaySection("Props"); }
+    void DisplayVehicles() { DisplaySection("Vehicles"); }
+
+    // ── Vehicle Helpers ─────────────────────────────────────────────
+
+    bool CanUseVehicle(VehicleConfig config)
+    {
+        var me = GameController?.GetMe();
+        if (me == null) return false;
+        return VehicleConfigs.CanPlayerUse(config, me.Job?.Name ?? "", me.IsVIP);
+    }
+
+    string GetVehicleRestriction(VehicleConfig config)
+    {
+        if (config.RequiresVIP) return "(VIP)";
+        if (config.RequiredJob != null) return $"({config.RequiredJob})";
+        return "";
+    }
+
+    void SpawnVehicle(VehicleType type)
+    {
+        if (VehiclePrefab == null)
+        {
+            Log.Error("VehiclePrefab not set");
+            return;
+        }
+
+        var me = GameController?.GetMe();
+        if (me == null) return;
+
+        var config = VehicleConfigs.Get(type);
+
+        // Check job/VIP restriction
+        if (!VehicleConfigs.CanPlayerUse(config, me.Job?.Name ?? "", me.IsVIP))
+        {
+            Sound.Play("audio/error.sound");
+            return;
+        }
+
+        // Check vehicle limit
+        if (VehicleManager.GetVehicleCount(me.Connection.Id) >= BustasConfig.MaxVehiclesPerPlayer)
+        {
+            Sound.Play("audio/error.sound");
+            return;
+        }
+
+        // Check spawn cooldown
+        if (VehicleManager.IsOnCooldown(me.Connection.Id))
+        {
+            Sound.Play("audio/error.sound");
+            return;
+        }
+
+        // Check cost
+        if (!config.IsFree && !Player.UpdateBalance(-config.Cost))
+        {
+            return;
+        }
+
+        // Spawn the vehicle
+        Vector3 playerPos = GameObject.Parent.Transform.World.Position + GameObject.Parent.Transform.Local.Forward * 150;
+        GameObject vehicle = VehiclePrefab.Clone(playerPos);
+
+        var vehicleLogic = vehicle.Components.Get<VehicleLogic>();
+        if (vehicleLogic != null)
+        {
+            vehicleLogic.SetVehicleType(type);
+            vehicleLogic.SetOwner(me.Connection.Id, me.Name);
+        }
+
+        vehicle.NetworkSpawn();
+        VehicleManager.RegisterVehicle(me.Connection.Id, vehicle);
+        VehicleManager.SetCooldown(me.Connection.Id);
+        Sound.Play("audio/select.sound");
+    }
 
     string Discord = "Discord";
     string GitHub = "GitHub";
@@ -507,5 +615,5 @@
         }
     }
 
-    protected override int BuildHash() => System.HashCode.Combine(PropManager?.PropCount(), CurrentPrinter);
+    protected override int BuildHash() => System.HashCode.Combine(PropManager?.PropCount(), CurrentPrinter, CurrentVehicleCount);
 }

@@ -1,4 +1,5 @@
 using System;
+using Entity.Vehicle;
 using GameSystems.CriminalEconomy;
 using GameSystems.LawOrder;
 using GameSystems.Player;
@@ -706,6 +707,81 @@ namespace GameSystems.Config
 								playerStats.SendMessage($"You are mugging {target.Name}! They have 10 seconds to drop up to ${Sandbox.GameSystems.BustasConfig.MugMaxAmount:N0}.");
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You are being mugged by {networkPlayer.Name}! Drop up to ${Sandbox.GameSystems.BustasConfig.MugMaxAmount:N0} or resist! (10 seconds)");
 
+								return true;
+						}
+				)},
+				// ── Vehicle Commands ──────────────────────────────────────
+				{ "repair", new Command(
+						name: "repair",
+						description: "Mechanic: Repair a vehicle you're looking at. Usage: /repair",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								if (networkPlayer == null) return false;
+
+								// Only Mechanics can use /repair
+								if (networkPlayer.Job?.Name != "Mechanic")
+								{
+									playerStats.SendMessage("Only Mechanics can repair vehicles.");
+									return false;
+								}
+
+								// Trace to find a vehicle the player is looking at
+								var camera = scene.GetAllComponents<CameraComponent>().FirstOrDefault(x => x.IsMainCamera);
+								if (camera == null) return false;
+
+								var start = camera.Transform.Position;
+								var direction = camera.Transform.World.Forward;
+								var end = start + direction * 200f;
+								var tr = scene.Trace.IgnoreGameObject(player).Ray(start, end).Run();
+
+								var vehicleLogic = tr.GameObject?.Components.Get<VehicleLogic>();
+								if (vehicleLogic == null)
+								{
+									playerStats.SendMessage("No vehicle found. Look at a vehicle to repair it.");
+									return false;
+								}
+
+								// Check if vehicle needs repair
+								if (vehicleLogic.CurrentHealth >= vehicleLogic.MaxHealth)
+								{
+									playerStats.SendMessage("This vehicle doesn't need repairs.");
+									return false;
+								}
+
+								float repairCost = vehicleLogic.GetRepairCost();
+
+								// Find the vehicle owner to charge them
+								var gameController = GameSystems.GameController.Instance;
+								var ownerPlayer = gameController?.GetPlayerByConnectionId(vehicleLogic.OwnerConnectionId);
+								if (ownerPlayer == null)
+								{
+									playerStats.SendMessage("Vehicle owner not found.");
+									return false;
+								}
+
+								var ownerStats = ownerPlayer.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (ownerStats == null) return false;
+
+								// Charge the vehicle owner
+								if (!ownerStats.UpdateBalance(-repairCost))
+								{
+									playerStats.SendMessage($"Vehicle owner can't afford the repair (${repairCost:N0}).");
+									return false;
+								}
+
+								// Pay the mechanic
+								playerStats.UpdateBalance(repairCost);
+
+								// Repair the vehicle
+								vehicleLogic.FullRepair();
+
+								playerStats.SendMessage($"Vehicle repaired! You earned ${repairCost:N0}.");
+								ownerStats.SendMessage($"Your {vehicleLogic.EntityName} was repaired for ${repairCost:N0}.");
 								return true;
 						}
 				)}

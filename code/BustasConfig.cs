@@ -52,6 +52,19 @@ namespace Sandbox.GameSystems
 		public const float PrinterExplosionTimer = 30f; // seconds before overheated printer explodes
 		public const int MaxPrintersPerPlayer = 5;
 
+		// Vehicles
+		public const int MaxVehiclesPerPlayer = 2;
+		public const float VehicleRepairCostMin = 200f;
+		public const float VehicleRepairCostMax = 500f;
+		public const float VehicleSpawnCooldown = 30f; // seconds
+		public const float VehicleSpeedSlow = 400f;
+		public const float VehicleSpeedMedium = 600f;
+		public const float VehicleSpeedFast = 900f;
+		public const float VehicleSpeedVeryFast = 1200f;
+		public const float VehicleDamageCollisionMultiplier = 0.5f;
+		public const float VehicleDamageWeaponMultiplier = 1.0f;
+		public const float VehicleDamageExplosionMultiplier = 3.0f;
+
 		// Law & Order
 		public const int MaxLaws = 10;
 		public const int MaxLawLength = 100;

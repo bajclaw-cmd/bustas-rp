@@ -1,5 +1,6 @@
 using System;
 using GameSystems.Jobs;
+using Entity.Vehicle;
 using GameSystems.CriminalEconomy;
 using GameSystems.LawOrder;
 using GameSystems.Player;
@@ -127,6 +128,9 @@ namespace GameSystems
 
 				// Clean up mug state for this player
 				MugManager.RemovePlayer( connection.Id );
+
+				// Destroy all vehicles owned by this player
+				VehicleManager.DestroyAllVehicles( connection.Id );
 
 				// Perform clean up functions
 				var playerStats = player.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>();
