@@ -42,9 +42,15 @@ namespace Sandbox.GameSystems.Player
 		{
 			if ( _lastUsed >= _salaryTimerSeconds && (Network.IsOwner) )
 			{
-				Balance += GetNetworkPlayer().Job.Salary; // add Salary to the player Money
-				Sound.Play( "sounds/kenney/ui/ui.upvote.sound" ); // play a basic ui sound
-				_lastUsed = 0; // reset the timer
+				var networkPlayer = GetNetworkPlayer();
+				float salary = networkPlayer.Job.Salary;
+				if ( networkPlayer.IsVIP )
+				{
+					salary *= BustasConfig.VIPSalaryMultiplier;
+				}
+				Balance += salary;
+				Sound.Play( "sounds/kenney/ui/ui.upvote.sound" );
+				_lastUsed = 0;
 			}
 
 			if ( _lastSaved >= _saveCooldown && (Networking.IsHost) )

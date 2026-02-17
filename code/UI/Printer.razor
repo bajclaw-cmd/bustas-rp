@@ -4,7 +4,15 @@
 @inherits PanelComponent
 
 <root>
-    <div class="title">$ @(NumberUtils.FormatNumberWithSuffix(PrinterLogic.PrinterCurrentMoney))</div>
+    @if (PrinterLogic != null && PrinterLogic.IsOverheating)
+    {
+        <div class="title" style="color: red;">OVERHEATING</div>
+        <div class="title" style="color: orange; font-size: 35px;">@(PrinterLogic.OverheatTimeRemaining.ToString("F0"))s - Press E!</div>
+    }
+    else
+    {
+        <div class="title">$ @(NumberUtils.FormatNumberWithSuffix(PrinterLogic?.PrinterCurrentMoney ?? 0))</div>
+    }
 </root>
 
 @code
@@ -20,11 +28,9 @@
         }
     }
 
-   // [Property] public GameObject Printer { get; set }
-
-
-    /// <summary>
-    /// the hash determines if the system should be rebuilt. If it changes, it will be rebuilt
-    /// </summary>
-    protected override int BuildHash() => System.HashCode.Combine(PrinterLogic?.PrinterCurrentMoney);
+    protected override int BuildHash() => System.HashCode.Combine(
+        PrinterLogic?.PrinterCurrentMoney,
+        PrinterLogic?.IsOverheating,
+        PrinterLogic?.OverheatTimeRemaining.ToString("F0")
+    );
 }

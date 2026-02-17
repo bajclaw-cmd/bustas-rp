@@ -5,7 +5,7 @@ using Sandbox.GameSystems.Database;
 namespace Sandbox.GameSystems.Player;
 
 /// <summary>
-/// Represents a DarkRP player 
+/// Represents a DarkRP player
 /// </summary>
 public class NetworkPlayer
 {
@@ -14,6 +14,31 @@ public class NetworkPlayer
 	public Connection Connection { get; set; }
 	public string Name { get; set; }
 	public JobResource Job { get; set; } = JobProvider.GetDefault();
+
+	/// <summary>
+	/// Whether this player has VIP status. Currently checks for Admin+ permission level.
+	/// </summary>
+	public bool IsVIP => CheckPermission( PermissionLevel.Admin );
+
+	/// <summary>
+	/// Maximum doors this player can own, accounting for VIP bonus.
+	/// </summary>
+	public int GetMaxDoors()
+	{
+		int max = BustasConfig.MaxDoorsPerPlayer;
+		if ( IsVIP ) max += BustasConfig.VIPExtraDoors;
+		return max;
+	}
+
+	/// <summary>
+	/// Maximum props this player can spawn, accounting for VIP bonus.
+	/// </summary>
+	public int GetMaxProps()
+	{
+		int max = BustasConfig.MaxPropsPerPlayer;
+		if ( IsVIP ) max += BustasConfig.VIPExtraProps;
+		return max;
+	}
 
 	public NetworkPlayer( GameObject gameObject, Connection connection, List<UserGroup> userGroups )
 	{

@@ -1,4 +1,6 @@
+using System;
 using Sandbox.Entity;
+using Sandbox.GameSystems;
 using Sandbox.GameSystems.Player;
 
 namespace Entity.Interactable.Printer
@@ -7,37 +9,118 @@ namespace Entity.Interactable.Printer
 	{
 		public Color Color { get; set; }
 		public Material Material { get; set; }
-		public float Price { get; set; }
+		public float Cost { get; set; }
+		public float Rate { get; set; }
+		public float OverheatChance { get; set; }
 		/// <summary>
 		/// The timer for the printer to generate money in seconds
 		/// </summary>
 		public float Timer { get; set; }
+		public bool RequiresVIP { get; set; }
 	}
+
 	public sealed class PrinterLogic : BaseEntity
 	{
+		// Define the different types of printers
+		public enum PrinterType { Bronze, Silver, Gold, Diamond, Emerald };
+
 		[Property] public GameObject PrinterFan { get; set; }
 		[Property] public float PrinterFanSpeed { get; set; } = 1000f;
 		[Property] public Dictionary<PrinterType, PrinterConfiguration> PrinterConfig = new();
 		[Property, Sync] public float PrinterCurrentMoney { get; set; } = 0f;
-		[Property] public float PrinterTimerMoney { get; set; } = 25f;
 		[Property] public float PrinterMaxMoney { get; set; } = 8000f;
-		// Define the different types of printers
-		public enum PrinterType { Bronze, Silver, Gold, Diamond };
 
-		private TimeSince _lastUsed = 0; // Set the timer
+		[Sync] public bool IsOverheating { get; set; } = false;
+		[Sync] public float OverheatTimeRemaining { get; set; } = 0f;
+		[Sync] public PrinterType CurrentPrinterType { get; set; } = PrinterType.Bronze;
 
-		private PrinterType _currentPrinterType; // Store the current printer type
+		private TimeSince _lastCycle = 0;
+		private TimeSince _overheatStarted = 0;
+		private bool _exploded = false;
 
 		/// <summary>
-		/// Interact with the printer. This comes from the IInteractable interface inherited from the Interactable class.
+		/// Returns the configuration for the current printer type with BustasConfig values.
+		/// </summary>
+		public static PrinterConfiguration GetTierConfig( PrinterType type )
+		{
+			return type switch
+			{
+				PrinterType.Bronze => new PrinterConfiguration
+				{
+					Cost = BustasConfig.PrinterBronzeCost,
+					Rate = BustasConfig.PrinterBronzeRate,
+					OverheatChance = BustasConfig.OverheatBronze,
+					Timer = BustasConfig.PrinterCycleTime,
+					Color = Color.Parse( "#CD7F32" ).Value,
+					RequiresVIP = false,
+				},
+				PrinterType.Silver => new PrinterConfiguration
+				{
+					Cost = BustasConfig.PrinterSilverCost,
+					Rate = BustasConfig.PrinterSilverRate,
+					OverheatChance = BustasConfig.OverheatSilver,
+					Timer = BustasConfig.PrinterCycleTime,
+					Color = Color.Parse( "#C0C0C0" ).Value,
+					RequiresVIP = false,
+				},
+				PrinterType.Gold => new PrinterConfiguration
+				{
+					Cost = BustasConfig.PrinterGoldCost,
+					Rate = BustasConfig.PrinterGoldRate,
+					OverheatChance = BustasConfig.OverheatGold,
+					Timer = BustasConfig.PrinterCycleTime,
+					Color = Color.Parse( "#FFD700" ).Value,
+					RequiresVIP = false,
+				},
+				PrinterType.Diamond => new PrinterConfiguration
+				{
+					Cost = BustasConfig.PrinterDiamondCost,
+					Rate = BustasConfig.PrinterDiamondRate,
+					OverheatChance = BustasConfig.OverheatDiamond,
+					Timer = BustasConfig.PrinterCycleTime,
+					Color = Color.Parse( "#40E0D0" ).Value,
+					RequiresVIP = false,
+				},
+				PrinterType.Emerald => new PrinterConfiguration
+				{
+					Cost = BustasConfig.PrinterEmeraldCost,
+					Rate = BustasConfig.PrinterEmeraldRate,
+					OverheatChance = BustasConfig.OverheatEmerald,
+					Timer = BustasConfig.PrinterCycleTime,
+					Color = Color.Parse( "#50C878" ).Value,
+					RequiresVIP = true,
+				},
+				_ => new PrinterConfiguration
+				{
+					Cost = BustasConfig.PrinterBronzeCost,
+					Rate = BustasConfig.PrinterBronzeRate,
+					OverheatChance = BustasConfig.OverheatBronze,
+					Timer = BustasConfig.PrinterCycleTime,
+					Color = Color.Parse( "#CD7F32" ).Value,
+					RequiresVIP = false,
+				}
+			};
+		}
+
+		/// <summary>
+		/// Interact with the printer: collect money or cool down if overheating.
 		/// </summary>
 		public override void InteractUse( SceneTraceResult tr, GameObject player )
 		{
-			Log.Info( "Interacting with printer" );
+			// If overheating, E key cools it down
+			if ( IsOverheating )
+			{
+				CoolDown();
+				var playerStats = player.Components.Get<Player>();
+				playerStats?.SendMessage( "You cooled down the printer!" );
+				return;
+			}
+
+			// Normal collect
 			if ( PrinterCurrentMoney > 0 )
 			{
 				var playerStats = player.Components.Get<Player>();
-				if ( playerStats == null ) { return; }
+				if ( playerStats == null ) return;
 
 				playerStats.UpdateBalance( PrinterCurrentMoney );
 				ResetPrinterMoney();
@@ -47,34 +130,64 @@ namespace Entity.Interactable.Printer
 
 		protected override void OnFixedUpdate()
 		{
-			// Determine the timer based on the printer type
-			float printerTimer = GetPrinterTimer();
-			// If the timer has passed, add money
-			if ( _lastUsed >= printerTimer )
+			if ( _exploded ) return;
+
+			// Handle overheating countdown
+			if ( IsOverheating )
+			{
+				OverheatTimeRemaining = BustasConfig.PrinterExplosionTimer - _overheatStarted;
+
+				// Blink red when overheating
+				var renderer = GameObject.Components.Get<ModelRenderer>();
+				if ( renderer != null )
+				{
+					float pulse = MathF.Sin( Time.Now * 6f ) * 0.5f + 0.5f;
+					renderer.Tint = Color.Lerp( Color.Red, Color.Orange, pulse );
+				}
+
+				// Fan slows down when overheating
+				SpinFan( 0.2f );
+
+				if ( _overheatStarted >= BustasConfig.PrinterExplosionTimer )
+				{
+					Explode();
+					return;
+				}
+				return;
+			}
+
+			// Normal operation: generate money on cycle
+			var config = GetTierConfig( CurrentPrinterType );
+			float cycleTime = config.Timer;
+
+			if ( _lastCycle >= cycleTime )
 			{
 				if ( PrinterCurrentMoney < PrinterMaxMoney )
 				{
-					PrinterCurrentMoney += PrinterTimerMoney; // Add money to the printer
+					PrinterCurrentMoney += config.Rate;
+
+					// Roll for overheat
+					if ( Random.Shared.NextSingle() < config.OverheatChance )
+					{
+						StartOverheat();
+					}
 				}
-				_lastUsed = 0; // Reset the timer
+				_lastCycle = 0;
 			}
-			SpinFan();
+
+			SpinFan( 1f );
 		}
 
-		private void SpinFan()
+		private void SpinFan( float speedMultiplier = 1f )
 		{
-			// Calculate the rotation amount based on PrinterFanSpeed and Time.Delta
-			var rotationAmount = PrinterFanSpeed * Time.Delta;
-
-			// Apply the rotation relative to the GameObject's current rotation
+			if ( PrinterFan == null ) return;
+			var rotationAmount = PrinterFanSpeed * speedMultiplier * Time.Delta;
 			PrinterFan.Transform.Rotation *= Rotation.FromAxis( Vector3.Left, -rotationAmount );
 		}
 
-		// Method to set the current printer type and update its color
 		public void SetPrinterType( PrinterType type )
 		{
-			_currentPrinterType = type;
-			// Automatically update the color when the printer type is set
+			CurrentPrinterType = type;
 			UpdatePrinterColor();
 		}
 
@@ -84,37 +197,55 @@ namespace Entity.Interactable.Printer
 			PrinterCurrentMoney = 0f;
 		}
 
-		// Method to get the correct timer based on the printer type
-		private float GetPrinterTimer()
+		[Broadcast]
+		private void StartOverheat()
 		{
-			if ( PrinterConfig.TryGetValue( _currentPrinterType, out var config ) )
-			{
-				return config.Timer;
-			}
-			return 60f; // Default timer, in case something goes wrong
+			IsOverheating = true;
+			_overheatStarted = 0;
+			OverheatTimeRemaining = BustasConfig.PrinterExplosionTimer;
+			Log.Warning( $"{EntityName} is overheating! Cool it down within {BustasConfig.PrinterExplosionTimer}s!" );
 		}
 
-		// Method to update the printer color based on the printer type
+		[Broadcast]
+		private void CoolDown()
+		{
+			IsOverheating = false;
+			OverheatTimeRemaining = 0f;
+			Sound.Play( "audio/select.sound", Transform.World.Position );
+			UpdatePrinterColor();
+		}
+
+		[Broadcast]
+		private void Explode()
+		{
+			_exploded = true;
+			IsOverheating = false;
+			PrinterCurrentMoney = 0f;
+
+			Log.Warning( $"{EntityName} exploded!" );
+			Sound.Play( "audio/error.sound", Transform.World.Position );
+
+			// Destroy the printer after a short delay
+			GameObject.Destroy();
+		}
+
 		private void UpdatePrinterColor()
 		{
-			Color newColor = Color.White;
-
-			if ( PrinterConfig.TryGetValue( _currentPrinterType, out var config ) )
-			{
-				newColor = config.Color;
-			}
-
-			// Assuming there's a component responsible for rendering the model
-			var ModelRenderer = GameObject.Components.Get<ModelRenderer>();
-			if ( ModelRenderer is null )
+			var config = GetTierConfig( CurrentPrinterType );
+			var renderer = GameObject.Components.Get<ModelRenderer>();
+			if ( renderer is null )
 			{
 				Log.Warning( "ModelRenderer component not found" );
 				return;
 			}
 
-			ModelRenderer.Tint = newColor;
-			// PrinterFan.Components.Get<ModelRenderer>().Tint = newColor;
-			ModelRenderer.MaterialOverride = config.Material;
+			renderer.Tint = config.Color;
+
+			// Apply material override from editor-configured PrinterConfig if available
+			if ( PrinterConfig.TryGetValue( CurrentPrinterType, out var editorConfig ) )
+			{
+				renderer.MaterialOverride = editorConfig.Material;
+			}
 		}
 	}
 }

@@ -9,12 +9,13 @@
 @using global::GameSystems
 @using global::GameSystems.Jobs
 @using Sandbox.Entities.Interactable.Props
+@using Sandbox.GameSystems
 @using Sandbox.GameSystems.Player
 
 @inherits PanelComponent;
 
 <root>
-    <div class="title">Tab Menu</div>
+    <div class="title">@BustasConfig.ServerName</div>
 
     <div class="main">
         <div class="side-bar">
@@ -22,6 +23,7 @@
                 <div class="name">@(Network.Owner.DisplayName.Truncate(13))</div>
                 <div class="wallet">$@(Player.Balance.ToString("N0"))</div>
                 <div class="sub">Salary:<span>$@(GameController.Instance.GetMe().Job.Salary.ToString("N0"))</span></div>
+                <div class="sub">Job:<span>@(GameController.Instance.GetMe().Job.Name)</span></div>
             </div>
             <div class="navigation">
                 <div class="buttoncontainer">
@@ -54,48 +56,54 @@
         <div class="main-container">
             <!-- Dark Web Section -->
             <div class="section" style="display: @(IsDarkWebVisible ? "flex" : "none");">
-                <div class="section-title">Dark Web</div>
+                <div class="section-title">Dark Web - Money Printers (@CurrentPrinter / @BustasConfig.MaxPrintersPerPlayer)</div>
                 <div class="section-contents">
 
-                    <div class="button" onclick=@(() => BuyPrinter(PrinterType.Bronze, 500))>
-                        <div class="icon" style="background-color: #A52A2A"></div>
+                    <div class="button" onclick=@(() => BuyPrinter(PrinterLogic.PrinterType.Bronze))>
+                        <div class="icon" style="background-color: #CD7F32"></div>
                         <div class="label-container">
                             <div class="label">Bronze Printer</div>
-                            <span class="description">@CurrentPrinter / @MaxPrinter</span>
-                            <span class="description">Slow</span>
-                            <div class="price">$500</div>
+                            <span class="description">$@(BustasConfig.PrinterBronzeRate.ToString("N0")) / cycle | @((BustasConfig.OverheatBronze * 100).ToString("N0"))% overheat</span>
+                            <div class="price">$@(BustasConfig.PrinterBronzeCost.ToString("N0"))</div>
                         </div>
                     </div>
 
-                    <div class="button" onclick=@(() => BuyPrinter(PrinterType.Silver, 1200))>
-                        <div class="icon" style="background-color: #DCDCDC"></div>
+                    <div class="button" onclick=@(() => BuyPrinter(PrinterLogic.PrinterType.Silver))>
+                        <div class="icon" style="background-color: #C0C0C0"></div>
                         <div class="label-container">
                             <div class="label">Silver Printer</div>
-                            <span class="description">@CurrentPrinter / @MaxPrinter</span>
-                            <span class="description">Average</span>
-                            <div class="price">$1,200</div>
+                            <span class="description">$@(BustasConfig.PrinterSilverRate.ToString("N0")) / cycle | @((BustasConfig.OverheatSilver * 100).ToString("N0"))% overheat</span>
+                            <div class="price">$@(BustasConfig.PrinterSilverCost.ToString("N0"))</div>
                         </div>
                     </div>
 
-                    <div class="button" onclick=@(() => BuyPrinter(PrinterType.Gold, 2600))>
+                    <div class="button" onclick=@(() => BuyPrinter(PrinterLogic.PrinterType.Gold))>
                         <div class="icon" style="background-color: #FFD700"></div>
                         <div class="label-container">
                             <div class="label">Gold Printer</div>
-                            <span class="description">@CurrentPrinter / @MaxPrinter</span>
-                            <span class="description">Fast</span>
-                            <div class="price">$2,600</div>
+                            <span class="description">$@(BustasConfig.PrinterGoldRate.ToString("N0")) / cycle | @((BustasConfig.OverheatGold * 100).ToString("N0"))% overheat</span>
+                            <div class="price">$@(BustasConfig.PrinterGoldCost.ToString("N0"))</div>
                         </div>
                     </div>
 
-                    <div class="button" onclick=@(() => BuyPrinter(PrinterType.Diamond, 4200))>
+                    <div class="button" onclick=@(() => BuyPrinter(PrinterLogic.PrinterType.Diamond))>
                         <div class="icon" style="background-color: #40E0D0"></div>
                         <div class="label-container">
                             <div class="label">Diamond Printer</div>
-                            <span class="description">@CurrentPrinter / @MaxPrinter</span>
-                            <span class="description">Super-fast</span>
-                            <div class="price">$4,200</div>
+                            <span class="description">$@(BustasConfig.PrinterDiamondRate.ToString("N0")) / cycle | @((BustasConfig.OverheatDiamond * 100).ToString("N0"))% overheat</span>
+                            <div class="price">$@(BustasConfig.PrinterDiamondCost.ToString("N0"))</div>
                         </div>
                     </div>
+
+                    <div class="button" onclick=@(() => BuyPrinter(PrinterLogic.PrinterType.Emerald)) style="border-color: #50C878;">
+                        <div class="icon" style="background-color: #50C878"></div>
+                        <div class="label-container">
+                            <div class="label">Emerald Printer <span style="color: #50C878; font-size: 14px;">(VIP)</span></div>
+                            <span class="description">$@(BustasConfig.PrinterEmeraldRate.ToString("N0")) / cycle | @((BustasConfig.OverheatEmerald * 100).ToString("N0"))% overheat</span>
+                            <div class="price">$@(BustasConfig.PrinterEmeraldCost.ToString("N0"))</div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -103,18 +111,24 @@
             <div class="section" style="display: @(IsJobsVisible ? "flex" : "none");">
                 <div class="section-title">Jobs</div>
                 <div class="section-contents">
-                    @foreach (var group in JobProvider.JobGroups.Values)
+                    @foreach (var category in GetJobCategories())
                     {
+                        var teamColor = GetCategoryColor(category);
                         <div class="section-job-group">
-                            <div class="section-job-titel" style="background-color: rgba(@(group.Color.r * 255), @(group.Color.g * 255), @(group.Color.b * 255), @(group.Color.a * 255))">@group.Name</div>
+                            <div class="section-job-titel" style="background-color: rgba(@(teamColor.r * 255), @(teamColor.g * 255), @(teamColor.b * 255), 0.6)">@category</div>
                             <div class="section-job-list">
-                                @foreach (var job in JobProvider.Jobs.Values.Where(x => x.Group == group))
+                                @foreach (var job in GetJobsByCategory(category))
                                 {
-                                    <div class="section-job button" onclick="@(() => GameController.SelectJob(Player.Network.OwnerId, job))">
-                                        <div class="icon"></div>
+                                    var currentWorkers = GetCurrentWorkers(job);
+                                    var maxDisplay = job.MaxWorkers == 0 ? "∞" : job.MaxWorkers.ToString();
+                                    var isFull = job.MaxWorkers > 0 && currentWorkers >= job.MaxWorkers;
+
+                                    <div class="section-job button @(isFull ? "disabled" : "")" onclick="@(() => SelectJob(job))" style="opacity: @(isFull ? "0.5" : "1")">
+                                        <div class="icon" style="background-color: rgba(@(job.TeamColor.r * 255), @(job.TeamColor.g * 255), @(job.TeamColor.b * 255), 1)"></div>
                                         <div class="label-container">
                                             <div class="label">@job.Name</div>
                                             <div class="description">@job.Description</div>
+                                            <div class="description">Salary: <span style="color: #75a774;">$@(job.Salary.ToString("N0"))</span> | Slots: @currentWorkers / @maxDisplay</div>
                                         </div>
                                     </div>
                                 }
@@ -208,33 +222,41 @@
 @code {
     [Property] GameObject PrinterPrefab { get; set; }
     [Property] Player Player { get; set; }
-    
-    // Everything related to printers
-    int MaxPrinter = 5;
-    int CurrentPrinter = 0;
-    enum PrinterType { Bronze, Silver, Gold, Diamond }
 
-    // Generic method to purchase a printer
-    void BuyPrinter(PrinterType type, float price)
+    // Printer tracking
+    int CurrentPrinter = 0;
+
+    void BuyPrinter(PrinterLogic.PrinterType type)
     {
-        if (CurrentPrinter >= MaxPrinter)
+        if (CurrentPrinter >= BustasConfig.MaxPrintersPerPlayer)
         {
             Sound.Play("audio/error.sound");
             return;
         }
 
-        if (!Player.UpdateBalance(-price))
+        // Check VIP requirement for Emerald
+        var config = PrinterLogic.GetTierConfig(type);
+        if (config.RequiresVIP)
         {
-            return; // Not enough money, error sound is handled elsewhere
+            var networkPlayer = GameController?.GetMe();
+            if (networkPlayer != null && !networkPlayer.IsVIP)
+            {
+                Sound.Play("audio/error.sound");
+                return;
+            }
+        }
+
+        if (!Player.UpdateBalance(-config.Cost))
+        {
+            return;
         }
 
         Vector3 playerPos = GameObject.Parent.Transform.World.Position + GameObject.Parent.Transform.Local.Forward * 50;
         GameObject printer = PrinterPrefab.Clone(playerPos);
 
-        // Set the printer type directly using a mapping if needed
-        printer.Components.Get<PrinterLogic>().SetPrinterType((PrinterLogic.PrinterType)type);
+        printer.Components.Get<PrinterLogic>().SetPrinterType(type);
 
-        printer.NetworkSpawn(); // It spawns on all clients
+        printer.NetworkSpawn();
         CurrentPrinter++;
     }
 
@@ -272,8 +294,7 @@
             if (result != null && result.Packages != null)
             {
                 CloudPackages = result.Packages.ToList();
-
-                StateHasChanged(); // Refresh the UI to show the packages
+                StateHasChanged();
             }
             else
             {
@@ -286,27 +307,75 @@
         }
     }
 
-    // Once I understand GetMeta better, I'll reincorporate this - dancore
-    @* private bool IsModelPackage(Package package)
+    // ── Job Helpers ────────────────────────────────────────────────
+
+    /// <summary>
+    /// Get unique job categories ordered: Civilians, Government, Criminals
+    /// </summary>
+    List<string> GetJobCategories()
     {
-        try
+        var categories = JobProvider.Jobs.Values
+            .Where(j => !string.IsNullOrEmpty(j.Category))
+            .Select(j => j.Category)
+            .Distinct()
+            .ToList();
+
+        // Sort in preferred order
+        var order = new List<string> { "Civilians", "Government", "Criminals" };
+        categories.Sort((a, b) =>
         {
-            // Check for the presence of a model file in the package's metadata
-            var meta = package.GetMeta("PrimaryAsset", string.Empty);
-            if (!string.IsNullOrEmpty(meta) && meta.EndsWith(".vmdl"))
+            int ia = order.IndexOf(a);
+            int ib = order.IndexOf(b);
+            if (ia == -1) ia = 999;
+            if (ib == -1) ib = 999;
+            return ia.CompareTo(ib);
+        });
+
+        return categories;
+    }
+
+    Color GetCategoryColor(string category)
+    {
+        return category switch
+        {
+            "Government" => BustasTeamColors.Government,
+            "Criminals" => BustasTeamColors.Criminals,
+            _ => BustasTeamColors.Civilians
+        };
+    }
+
+    List<JobResource> GetJobsByCategory(string category)
+    {
+        return JobProvider.Jobs.Values
+            .Where(j => j.Category == category)
+            .OrderBy(j => j.SortingLevel)
+            .ToList();
+    }
+
+    int GetCurrentWorkers(JobResource job)
+    {
+        if (GameController == null) return 0;
+        return GameController.GetAllPlayers().Values
+            .Count(p => p.Job?.Name == job.Name);
+    }
+
+    void SelectJob(JobResource job)
+    {
+        if (job.MaxWorkers > 0)
+        {
+            int current = GetCurrentWorkers(job);
+            if (current >= job.MaxWorkers)
             {
-                Log.Info($"Package {package.FullIdent} is a model package.");
-                return true;
+                Sound.Play("audio/error.sound");
+                return;
             }
-            Log.Warning($"Package {package.FullIdent} is not a model package.");
-            return false;
         }
-        catch (Exception ex)
-        {
-            Log.Error($"Failed to determine if package is a model: {ex.Message}");
-            return false;
-        }
-    } *@
+
+        GameController.SelectJob(Player.Network.OwnerId, job);
+        Sound.Play("audio/select.sound");
+    }
+
+    // ── Prop Helpers ───────────────────────────────────────────────
 
     void SpawnProps(string modelname)
     {
@@ -366,7 +435,6 @@
         }
     }
 
-
     void RemoveAllProps()
     {
         if (PropManager == null)
@@ -377,10 +445,11 @@
         PropManager.RemoveAllProps();
     }
 
-    // Boolean properties to control visibility
+    // ── Section Visibility ─────────────────────────────────────────
+
     bool IsDarkWebVisible = false,
-         IsJobsVisible = false,
-         IsInfoVisible = true,
+         IsJobsVisible = true,
+         IsInfoVisible = false,
          IsAdminVisible = false,
          IsPropsVisible = false;
 
@@ -438,5 +507,5 @@
         }
     }
 
-    protected override int BuildHash() => System.HashCode.Combine(PropManager?.PropCount());
+    protected override int BuildHash() => System.HashCode.Combine(PropManager?.PropCount(), CurrentPrinter);
 }

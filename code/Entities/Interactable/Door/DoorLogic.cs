@@ -1,4 +1,6 @@
 
+using GameSystems;
+using GameSystems.Jobs;
 using GameSystems.UI;
 using Sandbox.Entity;
 using Sandbox.GameSystems;
@@ -37,12 +39,25 @@ namespace Entity.Interactable.Door
 
 		public override void InteractUse( SceneTraceResult tr, GameObject player )
 		{
-			// Dont interact with the door if it is locked
-			if ( IsUnlocked == false ) { return; }
+			// If unlocked, anyone can open
+			if ( IsUnlocked )
+			{
+				OpenCloseDoor( player );
+				return;
+			}
 
-			// Open / Close door
-			OpenCloseDoor( player );
+			// If locked, only owners can open
+			Player playerComponent = player.Components.Get<Player>();
+			if ( playerComponent != null && IsDoorOwner( playerComponent ) )
+			{
+				OpenCloseDoor( player );
+				return;
+			}
+
+			// Government jobs can open any unlocked door (but not locked ones)
+			// Locked doors stay locked for everyone except owners
 		}
+
 		public override void InteractSpecial( SceneTraceResult tr, GameObject playerobject )
 		{
 			if (!IsOwnable) return;
@@ -51,6 +66,24 @@ namespace Entity.Interactable.Door
 
 			if ( DoorOwners.Count == 0 || CanOwn.Contains(player))
 			{
+				// Check if player's job allows door ownership
+				var networkPlayer = GameController.Instance.GetPlayerByGameObjectId( playerobject.Id );
+				if ( networkPlayer?.Job != null && !networkPlayer.Job.CanOwnDoors )
+				{
+					player.SendMessage( "Your job does not allow owning doors." );
+					Sound.Play( "audio/error.sound" );
+					return;
+				}
+
+				// Check door limit
+				int maxDoors = networkPlayer?.GetMaxDoors() ?? BustasConfig.MaxDoorsPerPlayer;
+				if ( player.Doors.Count >= maxDoors )
+				{
+					player.SendMessage( $"You already own the maximum number of doors ({maxDoors})." );
+					Sound.Play( "audio/error.sound" );
+					return;
+				}
+
 				PurchaseDoor(player);
 				return;
 			}
