@@ -1,5 +1,6 @@
 using System;
 using Entity.Interactable.Props;
+using GameSystems.UI;
 using Utils;
 
 namespace Sandbox.Entities.Interactable.Props

@@ -1,6 +1,7 @@
 using System;
 using Entity.Interactable.Door;
 using GameSystems;
+using GameSystems.UI;
 using Sandbox.GameSystems.Database;
 
 namespace Sandbox.GameSystems.Player

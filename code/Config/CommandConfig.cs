@@ -1,5 +1,6 @@
 using System;
 using GameSystems.Player;
+using GameSystems.UI;
 using Sandbox.GameSystems.Config;
 
 namespace GameSystems.Config

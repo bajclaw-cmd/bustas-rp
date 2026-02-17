@@ -1,6 +1,7 @@
 using System;
 using GameSystems.Jobs;
 using GameSystems.Player;
+using GameSystems.UI;
 using Sandbox.GameSystems.Database;
 using Sandbox.GameSystems.Player;
 
