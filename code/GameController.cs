@@ -1,4 +1,5 @@
 using System;
+using GameSystems.Admin;
 using GameSystems.Jobs;
 using Entity.Vehicle;
 using GameSystems.CriminalEconomy;
@@ -74,6 +75,16 @@ namespace GameSystems
 			Log.Info( $"Adding player: {connection.Id} {connection.DisplayName}" );
 			try
 			{
+				// Check if player is banned
+				if ( BanManager.IsBanned( connection.SteamId ) )
+				{
+					var ban = BanManager.GetBan( connection.SteamId );
+					var timeLeft = BanManager.GetBanTimeRemaining( connection.SteamId );
+					Log.Info( $"Banned player tried to connect: {connection.DisplayName} ({connection.SteamId}) - {timeLeft} remaining" );
+					connection.Disconnect();
+					return;
+				}
+
 				var userGroups = new List<UserGroup>();
 				// If the user is a Dev, assign the developer user group
 				if ( DevSteamIDs.Contains( connection.SteamId ) )
@@ -138,6 +149,9 @@ namespace GameSystems
 				MessageManager.ClearPlayer( connection.SteamId );
 				EmergencyManager.ClearPlayer( connection.Id );
 				AdvertManager.ClearPlayer( connection.Id );
+
+				// Clean up NLR tracking
+				NLRManager.ClearPlayer( connection.Id );
 
 				// Perform clean up functions
 				var playerStats = player.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>();

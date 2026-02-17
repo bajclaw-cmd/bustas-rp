@@ -150,11 +150,13 @@
                                     var currentWorkers = GetCurrentWorkers(job);
                                     var maxDisplay = job.MaxWorkers == 0 ? "∞" : job.MaxWorkers.ToString();
                                     var isFull = job.MaxWorkers > 0 && currentWorkers >= job.MaxWorkers;
+                                    var needsVIP = job.RequiresVIP && !(GameController?.GetMe()?.IsVIP ?? false);
+                                    var isDisabled = isFull || needsVIP;
 
-                                    <div class="section-job button @(isFull ? "disabled" : "")" onclick="@(() => SelectJob(job))" style="opacity: @(isFull ? "0.5" : "1")">
+                                    <div class="section-job button @(isDisabled ? "disabled" : "")" onclick="@(() => SelectJob(job))" style="opacity: @(isDisabled ? "0.5" : "1")">
                                         <div class="icon" style="background-color: rgba(@(job.TeamColor.r * 255), @(job.TeamColor.g * 255), @(job.TeamColor.b * 255), 1)"></div>
                                         <div class="label-container">
-                                            <div class="label">@job.Name</div>
+                                            <div class="label">@job.Name @(job.RequiresVIP ? "(VIP)" : "")</div>
                                             <div class="description">@job.Description</div>
                                             <div class="description">Salary: <span style="color: #75a774;">$@(job.Salary.ToString("N0"))</span> | Slots: @currentWorkers / @maxDisplay</div>
                                         </div>
@@ -401,6 +403,13 @@
                 Sound.Play("audio/error.sound");
                 return;
             }
+        }
+
+        // Check VIP requirement
+        if (job.RequiresVIP && !(GameController?.GetMe()?.IsVIP ?? false))
+        {
+            Sound.Play("audio/error.sound");
+            return;
         }
 
         GameController.SelectJob(Player.Network.OwnerId, job);

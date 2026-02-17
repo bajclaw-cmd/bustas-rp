@@ -1,6 +1,8 @@
 using System;
 using Entity.Vehicle;
+using GameSystems.Admin;
 using GameSystems.CriminalEconomy;
+using GameSystems.Jobs;
 using GameSystems.LawOrder;
 using GameSystems.Phone;
 using GameSystems.Player;
@@ -879,8 +881,297 @@ namespace GameSystems.Config
 
 								return true;
 						}
+				)},
+				// ── Admin & VIP Commands ──────────────────────────────────
+				{ "kick", new Command(
+						name: "kick",
+						description: "Kick a player. Usage: /kick <player> [reason]",
+						permissionLevel: PermissionLevel.Moderator,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								if (args.Length < 1) { playerStats.SendMessage("Usage: /kick <player> [reason]"); return false; }
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								string reason = args.Length > 1 ? string.Join(" ", args.Skip(1)) : "No reason given";
+								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "KICK", target.Name, reason);
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You have been kicked: {reason}");
+								target.Connection.Disconnect();
+								playerStats.SendMessage($"Kicked {target.Name}: {reason}");
+								return true;
+						}
+				)},
+				{ "bring", new Command(
+						name: "bring",
+						description: "Bring a player to you. Usage: /bring <player>",
+						permissionLevel: PermissionLevel.Moderator,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								if (args.Length < 1) { playerStats.SendMessage("Usage: /bring <player>"); return false; }
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								// Save target's position for /return
+								_returnPositions[target.Connection.Id] = target.GameObject.Transform.Position;
+								target.GameObject.Transform.Position = player.Transform.Position + player.Transform.Rotation * Vector3.Forward * 100;
+								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "BRING", target.Name);
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You have been brought to {networkPlayer.Name}.");
+								playerStats.SendMessage($"Brought {target.Name} to you.");
+								return true;
+						}
+				)},
+				{ "return", new Command(
+						name: "return",
+						description: "Return a player to their previous position. Usage: /return <player>",
+						permissionLevel: PermissionLevel.Moderator,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								if (args.Length < 1) { playerStats.SendMessage("Usage: /return <player>"); return false; }
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
+								if (!_returnPositions.TryGetValue(target.Connection.Id, out var pos))
+								{
+									playerStats.SendMessage($"No saved position for {target.Name}.");
+									return false;
+								}
+								target.GameObject.Transform.Position = pos;
+								_returnPositions.Remove(target.Connection.Id);
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "RETURN", target.Name);
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage("You have been returned to your previous position.");
+								playerStats.SendMessage($"Returned {target.Name}.");
+								return true;
+						}
+				)},
+				{ "freeze", new Command(
+						name: "freeze",
+						description: "Freeze a player. Usage: /freeze <player>",
+						permissionLevel: PermissionLevel.Moderator,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								if (args.Length < 1) { playerStats.SendMessage("Usage: /freeze <player>"); return false; }
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
+								var targetController = target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (targetController != null) targetController.EyesLocked = true;
+								var cc = target.GameObject.Components.Get<CharacterController>();
+								if (cc != null) cc.Velocity = Vector3.Zero;
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "FREEZE", target.Name);
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage("You have been frozen by an admin.");
+								playerStats.SendMessage($"Froze {target.Name}.");
+								return true;
+						}
+				)},
+				{ "unfreeze", new Command(
+						name: "unfreeze",
+						description: "Unfreeze a player. Usage: /unfreeze <player>",
+						permissionLevel: PermissionLevel.Moderator,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								if (args.Length < 1) { playerStats.SendMessage("Usage: /unfreeze <player>"); return false; }
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
+								var targetController = target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (targetController != null) targetController.EyesLocked = false;
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "UNFREEZE", target.Name);
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage("You have been unfrozen.");
+								playerStats.SendMessage($"Unfroze {target.Name}.");
+								return true;
+						}
+				)},
+				{ "god", new Command(
+						name: "god",
+						description: "Toggle god mode for yourself.",
+						permissionLevel: PermissionLevel.Admin,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								playerStats.SetMaxHealth( playerStats.MaxHealth >= 99999 ? 100f : 99999f );
+								playerStats.SetHealth( playerStats.MaxHealth );
+								bool isGod = playerStats.MaxHealth >= 99999;
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, isGod ? "GOD ON" : "GOD OFF", networkPlayer.Name);
+								playerStats.SendMessage($"God mode {(isGod ? "enabled" : "disabled")}.");
+								return true;
+						}
+				)},
+				{ "setjob", new Command(
+						name: "setjob",
+						description: "Set a player's job. Usage: /setjob <player> <jobname>",
+						permissionLevel: PermissionLevel.Admin,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								if (args.Length < 2) { playerStats.SendMessage("Usage: /setjob <player> <jobname>"); return false; }
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
+								string jobName = string.Join(" ", args.Skip(1));
+								var job = BustasJobs.GetByName(jobName);
+								if (job == null) { playerStats.SendMessage($"Job '{jobName}' not found."); return false; }
+								gameController.SelectJob(target.Connection.Id, job);
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "SETJOB", target.Name, jobName);
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"Your job has been set to {job.Name}.");
+								playerStats.SendMessage($"Set {target.Name}'s job to {job.Name}.");
+								return true;
+						}
+				)},
+				{ "givevip", new Command(
+						name: "givevip",
+						description: "Give VIP to a player. Usage: /givevip <player> <days>",
+						permissionLevel: PermissionLevel.Admin,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								if (args.Length < 2) { playerStats.SendMessage("Usage: /givevip <player> <days>"); return false; }
+								if (!int.TryParse(args[1], out int days) || days <= 0) { playerStats.SendMessage("Invalid number of days."); return false; }
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								VIPManager.GrantVIP(target.Connection.SteamId, days, networkPlayer.Name);
+								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "GIVEVIP", target.Name, $"{days} days");
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You have been granted VIP for {days} days!");
+								playerStats.SendMessage($"Gave VIP to {target.Name} for {days} days.");
+								return true;
+						}
+				)},
+				{ "removevip", new Command(
+						name: "removevip",
+						description: "Remove VIP from a player. Usage: /removevip <player>",
+						permissionLevel: PermissionLevel.Admin,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								if (args.Length < 1) { playerStats.SendMessage("Usage: /removevip <player>"); return false; }
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								VIPManager.RemoveVIP(target.Connection.SteamId);
+								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "REMOVEVIP", target.Name);
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage("Your VIP status has been removed.");
+								playerStats.SendMessage($"Removed VIP from {target.Name}.");
+								return true;
+						}
+				)},
+				{ "checkvip", new Command(
+						name: "checkvip",
+						description: "Check a player's VIP status. Usage: /checkvip <player>",
+						permissionLevel: PermissionLevel.Admin,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								if (args.Length < 1) { playerStats.SendMessage("Usage: /checkvip <player>"); return false; }
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
+								if (VIPManager.IsVIP(target.Connection.SteamId))
+								{
+									var remaining = VIPManager.GetTimeRemaining(target.Connection.SteamId);
+									playerStats.SendMessage($"{target.Name} has VIP. Time remaining: {remaining}");
+								}
+								else
+								{
+									playerStats.SendMessage($"{target.Name} does not have VIP.");
+								}
+								return true;
+						}
+				)},
+				{ "logs", new Command(
+						name: "logs",
+						description: "View recent admin actions. Usage: /logs",
+						permissionLevel: PermissionLevel.Admin,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								var logs = AdminLogger.GetFormattedLogs(10);
+								if (logs.Count == 0) { playerStats.SendMessage("No admin logs."); return true; }
+								playerStats.SendMessage("--- Recent Admin Logs ---");
+								foreach (var log in logs) { playerStats.SendMessage(log); }
+								return true;
+						}
+				)},
+				{ "ban", new Command(
+						name: "ban",
+						description: "Ban a player. Usage: /ban <player> <duration_minutes> [reason] (0 = permanent)",
+						permissionLevel: PermissionLevel.Admin,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								if (args.Length < 2) { playerStats.SendMessage("Usage: /ban <player> <duration_minutes> [reason]"); return false; }
+								if (!int.TryParse(args[1], out int duration) || duration < 0) { playerStats.SendMessage("Invalid duration. Use minutes (0 = permanent)."); return false; }
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								string reason = args.Length > 2 ? string.Join(" ", args.Skip(2)) : "No reason given";
+								BanManager.Ban(target.Connection.SteamId, target.Name, duration, reason, networkPlayer.Name);
+								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "BAN", target.Name, $"{(duration > 0 ? $"{duration}m" : "permanent")} - {reason}");
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You have been banned: {reason}");
+								target.Connection.Disconnect();
+								playerStats.SendMessage($"Banned {target.Name} for {(duration > 0 ? $"{duration} minutes" : "permanently")}: {reason}");
+								return true;
+						}
+				)},
+				{ "unban", new Command(
+						name: "unban",
+						description: "Unban a player by SteamID. Usage: /unban <steamid>",
+						permissionLevel: PermissionLevel.Admin,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								if (args.Length < 1) { playerStats.SendMessage("Usage: /unban <steamid>"); return false; }
+								if (!ulong.TryParse(args[0], out ulong steamId)) { playerStats.SendMessage("Invalid SteamID."); return false; }
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								if (!BanManager.Unban(steamId)) { playerStats.SendMessage($"SteamID {steamId} is not banned."); return false; }
+								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "UNBAN", steamId.ToString());
+								playerStats.SendMessage($"Unbanned SteamID {steamId}.");
+								return true;
+						}
+				)},
+				{ "motd", new Command(
+						name: "motd",
+						description: "Show server rules (Message of the Day).",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+								playerStats.ShowMOTD();
+								return true;
+						}
 				)}
 		};
+
+		// Storage for /return command positions
+		private static readonly Dictionary<Guid, Vector3> _returnPositions = new();
 
 		public IReadOnlyCollection<ICommandConfig> Commands => _commands.Values;
 		/// <summary>

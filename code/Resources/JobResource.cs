@@ -23,5 +23,6 @@ namespace GameSystems.Jobs
 		[Category( "Gameplay" )] public BustasTeam Team { get; set; } = BustasTeam.Civilians;
 		[Category( "Gameplay" )] public Color TeamColor { get; set; } = BustasTeamColors.Civilians;
 		[Category( "Gameplay" )] public string Category { get; set; }
+		[Category( "Gameplay" )] public bool RequiresVIP { get; set; }
 	}
 }

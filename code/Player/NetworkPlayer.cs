@@ -1,3 +1,4 @@
+using GameSystems.Admin;
 using GameSystems.Jobs;
 using GameSystems.Player;
 using Sandbox.GameSystems.Database;
@@ -16,9 +17,9 @@ public class NetworkPlayer
 	public JobResource Job { get; set; } = JobProvider.GetDefault();
 
 	/// <summary>
-	/// Whether this player has VIP status. Currently checks for Admin+ permission level.
+	/// Whether this player has VIP status. Checks VIPManager (time-based) OR Admin+ permission.
 	/// </summary>
-	public bool IsVIP => CheckPermission( PermissionLevel.Admin );
+	public bool IsVIP => VIPManager.IsVIP( Connection.SteamId ) || CheckPermission( PermissionLevel.Admin );
 
 	/// <summary>
 	/// Maximum doors this player can own, accounting for VIP bonus.
@@ -46,6 +47,9 @@ public class NetworkPlayer
 		Connection = connection;
 		Name = connection.DisplayName;
 		UserGroups = userGroups;
+
+		// Load VIP status
+		VIPManager.LoadPlayer( Connection.SteamId );
 
 		Log.Info( "Loading saved data if exists" );
 		if ( FileSystem.Data.FileExists( "playersdata/" + Connection.SteamId ) )

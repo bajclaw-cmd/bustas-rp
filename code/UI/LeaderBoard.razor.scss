@@ -1,53 +1,204 @@
 LeaderBoard {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	pointer-events: none;
+	display: none;
 
-    .TableContainer {
-        display: flex; 
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        color: #c9c9c9;
-        font-family: 'Times New Roman', serif;
-        font-weight: 400;
-        border-radius: 5px;
-        width: 100%; /* Adjust the width as needed */
-        height:80%;
-    }
+	&.open {
+		display: flex;
+		pointer-events: all;
+		justify-content: center;
+		align-items: flex-start;
+		padding-top: 80px;
+	}
 
-    .TableTitle {
-        text-align: center;
-        justify-content: center;
-        width: 60%;
-        background-color: #1b1b23;
-        border-radius: 5px 5px 0 0;
-    }   
+	.scoreboard-container {
+		width: 65%;
+		max-height: 80%;
+		flex-direction: column;
+		background-color: rgba(20, 20, 30, 0.95);
+		border-radius: 8px;
+		border: 2px solid #2a2a3e;
+		overflow: hidden;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+	}
 
-    .TableRow {
-        display: flex;
-        justify-content: center;
-        width: 60%;
-        background-color: #22222bF0;
-    }
+	.scoreboard-header {
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		padding: 12px 20px;
+		background-color: #1a1a2e;
+		border-bottom: 2px solid #2a2a3e;
+	}
 
-    .TableCell, .TableHeader {
-        flex: 1; /* Each cell takes up equal space */
-        text-align: center;
-        border: 2px solid #37343e;
-        color: #c9c9c9;
-        padding-top:0.1rem;
-        padding-bottom:0.1rem;
-    }
+	.server-name {
+		font-size: 20px;
+		font-weight: bold;
+		color: #7B8CDE;
+	}
 
-    .TableRow:nth-child(even) {
-        background-color: #1b1b23F0;
-    }
+	.player-count {
+		font-size: 14px;
+		color: #888;
+	}
 
-    .TableRow:hover {
-        background-color: rgb(50,125,179);
-        color: white;
-    }
+	.scoreboard-table {
+		flex-direction: column;
+		overflow-y: scroll;
+	}
+
+	.table-header {
+		flex-direction: row;
+		background-color: #1e1e32;
+		border-bottom: 1px solid #333;
+	}
+
+	.table-header .col {
+		font-weight: bold;
+		color: #7B8CDE;
+		font-size: 13px;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.table-row {
+		flex-direction: row;
+		transition: background-color 0.1s;
+
+		&:nth-child(even) {
+			background-color: rgba(30, 30, 48, 0.5);
+		}
+
+		&:hover {
+			background-color: rgba(50, 125, 179, 0.3);
+		}
+	}
+
+	.col {
+		padding: 8px 12px;
+		font-size: 14px;
+		color: #c9c9c9;
+		display: flex;
+		align-items: center;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.col-name {
+		flex: 3;
+		gap: 6px;
+	}
+
+	.col-job {
+		flex: 2;
+	}
+
+	.col-money {
+		flex: 1.5;
+		color: #2ECC71;
+	}
+
+	.col-rank {
+		flex: 1.5;
+		text-align: center;
+		justify-content: center;
+	}
+
+	.col-ping {
+		flex: 1;
+		text-align: right;
+		justify-content: flex-end;
+		color: #888;
+	}
+
+	.col-actions {
+		flex: 0.8;
+		justify-content: center;
+	}
+
+	.vip-tag {
+		font-size: 10px;
+		font-weight: bold;
+		color: #FFD700;
+		background-color: rgba(255, 215, 0, 0.15);
+		padding: 1px 5px;
+		border-radius: 3px;
+		border: 1px solid rgba(255, 215, 0, 0.3);
+	}
+
+	.admin-btn {
+		width: 28px;
+		height: 28px;
+		background-color: transparent;
+		border: 1px solid #444;
+		border-radius: 4px;
+		cursor: pointer;
+		justify-content: center;
+		align-items: center;
+		transition: background-color 0.1s;
+
+		.icon {
+			font-size: 18px;
+			color: #7B8CDE;
+		}
+
+		&:hover {
+			background-color: rgba(123, 140, 222, 0.2);
+		}
+	}
+
+	// Inline context menu row
+	.context-row {
+		flex-direction: row;
+		background-color: #1a1a2e;
+		border-top: 1px solid #333;
+		border-bottom: 1px solid #333;
+		padding: 6px 12px;
+	}
+
+	.context-actions {
+		flex-direction: row;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.ctx-btn {
+		padding: 5px 10px;
+		background-color: #252545;
+		border: 1px solid #333;
+		border-radius: 4px;
+		color: #c9c9c9;
+		font-size: 12px;
+		cursor: pointer;
+		flex-direction: row;
+		align-items: center;
+		gap: 4px;
+		transition: background-color 0.1s;
+
+		.icon {
+			font-size: 14px;
+			color: #7B8CDE;
+		}
+
+		&:hover {
+			background-color: rgba(50, 125, 179, 0.3);
+		}
+
+		&.danger {
+			color: #E74C3C;
+
+			.icon {
+				color: #E74C3C;
+			}
+
+			&:hover {
+				background-color: rgba(231, 76, 60, 0.2);
+			}
+		}
+	}
 }

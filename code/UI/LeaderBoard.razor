@@ -2,29 +2,89 @@
 @using Sandbox;
 @using System;
 @using global::GameSystems
+@using global::GameSystems.Admin
+@using global::GameSystems.Config
+@using global::GameSystems.Jobs
+@using global::GameSystems.Player
+@using Sandbox.GameSystems
 @using Sandbox.GameSystems.Player;
 @inherits PanelComponent
 
-<root>
+<root class="@(_showLeaderboard ? "open" : "")">
 	@if ( _showLeaderboard )
 	{
-		<div class="TableContainer">
-			<!--<h2 class="TableTitle"> Current Players </h2>-->
-			<div class="TableRow">
-				<div class="TableHeader">Player Name</div>
-				<div class="TableHeader">Job</div>
-				<div class="TableHeader">Rank</div>
-				<div class="TableHeader">Steam ID</div>
+		<div class="scoreboard-container" onclick=@CloseContextMenu>
+			<div class="scoreboard-header">
+				<span class="server-name">@BustasConfig.ServerName</span>
+				<span class="player-count">@GameController.Instance.Players.Count / @BustasConfig.MaxPlayers</span>
 			</div>
-			@foreach ( var player in GameController.Instance.Players )
-			{
-				<div class="TableRow">
-					<div class="TableCell" style="color:@GetColorForUser( @player.Value, true )">@player.Value.Connection.DisplayName</div>
-					<div class="TableCell" style="color:@GetColorForUser( @player.Value, true )">@GetJobNameForUser( @player.Value )</div>
-					<div class="TableCell" style="color:@GetColorForUser( @player.Value, true );text-align:center">@player.Value.GetHighestUserGroup().Name.ToUpper()</div>
-					<div class="TableCell" style="color:@GetColorForUser( @player.Value, true )">@player.Value.Connection.SteamId</div>
+
+			<div class="scoreboard-table">
+				<div class="table-header">
+					<div class="col col-name">Player</div>
+					<div class="col col-job">Job</div>
+					<div class="col col-money">Money</div>
+					<div class="col col-rank">Rank</div>
+					<div class="col col-ping">Ping</div>
+					@if ( IsAdmin )
+					{
+						<div class="col col-actions">Admin</div>
+					}
 				</div>
-			}
+
+				@foreach ( var kvp in GameController.Instance.Players )
+				{
+					var p = kvp.Value;
+					var isVip = p.IsVIP;
+					var group = p.GetHighestUserGroup();
+					var rowColor = group.Color.Hex;
+
+					<div class="table-row">
+						<div class="col col-name" style="color: @rowColor">
+							@p.Connection.DisplayName
+							@if ( isVip )
+							{
+								<span class="vip-tag">VIP</span>
+							}
+						</div>
+						<div class="col col-job">@p.Job.Name</div>
+						<div class="col col-money">$@(p.GameObject.Components.Get<Player>()?.Balance.ToString("N0") ?? "0")</div>
+						<div class="col col-rank" style="color: @rowColor">@group.DisplayName</div>
+						<div class="col col-ping">@GetPing( p )ms</div>
+						@if ( IsAdmin )
+						{
+							<div class="col col-actions">
+								<button class="admin-btn" onclick=@( () => ToggleContextMenu( p ) )>
+									<i class="icon">more_vert</i>
+								</button>
+							</div>
+						}
+					</div>
+
+					@if ( _contextTarget == p && _contextMenuVisible )
+					{
+						<div class="context-row">
+							<div class="context-actions">
+								<button class="ctx-btn" onclick=@( () => RunAdminCommand("bring", p.Name) )>
+									<i class="icon">person_pin</i> Bring
+								</button>
+								<button class="ctx-btn" onclick=@( () => RunAdminCommand("tp", p.Name) )>
+									<i class="icon">near_me</i> Goto
+								</button>
+								<button class="ctx-btn" onclick=@( () => RunAdminCommand("freeze", p.Name) )>
+									<i class="icon">ac_unit</i> Freeze
+								</button>
+								<button class="ctx-btn" onclick=@( () => RunAdminCommand("kick", p.Name) )>
+									<i class="icon">logout</i> Kick
+								</button>
+								<button class="ctx-btn danger" onclick=@( () => RunAdminCommand("ban", p.Name) )>
+									<i class="icon">block</i> Ban
+								</button>
+							</div>
+						</div>
+					}
+				}
+			</div>
 		</div>
 	}
 </root>
@@ -32,27 +92,87 @@
 @code
 {
 	private bool _showLeaderboard;
+	private bool _contextMenuVisible;
+	private NetworkPlayer _contextTarget;
+
+	private bool IsAdmin
+	{
+		get
+		{
+			var me = GameController.Instance?.GetMe();
+			return me?.CheckPermission( PermissionLevel.Moderator ) ?? false;
+		}
+	}
 
 	protected override void OnUpdate()
 	{
+		var wasShowing = _showLeaderboard;
 		_showLeaderboard = Input.Down( "menu" );
+
+		if ( wasShowing && !_showLeaderboard )
+		{
+			_contextMenuVisible = false;
+			_contextTarget = null;
+		}
 	}
 
-	private string GetJobNameForUser(NetworkPlayer p)
+	private string GetPing( NetworkPlayer p )
 	{
-		return p.Job.Name;
+		try
+		{
+			return p.Connection.Ping.ToString( "F0" );
+		}
+		catch
+		{
+			return "0";
+		}
 	}
 
-	private string GetColorForUser(NetworkPlayer p, bool forceGroupColor = false)
+	private void ToggleContextMenu( NetworkPlayer target )
 	{
-		return p.GetHighestUserGroup().Color.Hex;
+		if ( _contextTarget == target && _contextMenuVisible )
+		{
+			_contextMenuVisible = false;
+			_contextTarget = null;
+		}
+		else
+		{
+			_contextTarget = target;
+			_contextMenuVisible = true;
+		}
 	}
 
-	/// <summary>
-    /// the hash determines if the system should be rebuilt. If it changes, it will be rebuilt
-    /// </summary>
-    protected override int BuildHash() => HashCode.Combine(
-	    _showLeaderboard,
-	    GameController.Instance.Players
-	    );
+	private void CloseContextMenu()
+	{
+		_contextMenuVisible = false;
+		_contextTarget = null;
+	}
+
+	private void RunAdminCommand( string command, string targetName )
+	{
+		_contextMenuVisible = false;
+		_contextTarget = null;
+
+		var commandConfig = Scene.Directory.FindByName( "Screen" )?.First()?.Components.Get<CommandConfig>();
+		if ( commandConfig == null ) return;
+
+		var me = GameController.Instance.GetMe();
+		if ( me == null ) return;
+
+		if ( command == "ban" )
+		{
+			commandConfig.ExecuteCommand( "ban", me.GameObject, Scene, new[] { targetName, "60", "Banned from scoreboard" } );
+		}
+		else
+		{
+			commandConfig.ExecuteCommand( command, me.GameObject, Scene, new[] { targetName } );
+		}
+	}
+
+	protected override int BuildHash() => HashCode.Combine(
+		_showLeaderboard,
+		_contextMenuVisible,
+		_contextTarget,
+		GameController.Instance.Players
+	);
 }

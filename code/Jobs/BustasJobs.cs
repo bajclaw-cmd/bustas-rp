@@ -3,7 +3,7 @@ using Sandbox.GameSystems;
 namespace GameSystems.Jobs
 {
 	/// <summary>
-	/// Defines all 23 standard Bustas RP jobs in code.
+	/// Defines all 26 standard Bustas RP jobs in code.
 	/// These are registered into JobProvider at startup.
 	/// </summary>
 	public static class BustasJobs
@@ -430,6 +430,65 @@ namespace GameSystems.Jobs
 				IsCriminal = true,
 				SortingLevel = 35,
 				Vote = false,
+			} );
+
+			// ── VIP Jobs ───────────────────────────────────────────────
+
+			Register( new JobResource
+			{
+				Name = "VIP Thief",
+				Description = "Elite thief with faster lockpick and higher mug limit.",
+				Team = BustasTeam.Criminals,
+				TeamColor = BustasTeamColors.Criminals,
+				Color = BustasTeamColors.Criminals,
+				Category = "Criminals",
+				Salary = 30f,
+				MaxWorkers = 2,
+				Weapons = new List<string> { "lockpick" },
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = true,
+				SortingLevel = 36,
+				Vote = false,
+				RequiresVIP = true,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "VIP Hitman",
+				Description = "Professional assassin. Can see target location on GPS.",
+				Team = BustasTeam.Criminals,
+				TeamColor = BustasTeamColors.Criminals,
+				Color = BustasTeamColors.Criminals,
+				Category = "Criminals",
+				Salary = 45f,
+				MaxWorkers = 1,
+				Weapons = new List<string> { "pistol", "sniper" },
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = true,
+				SortingLevel = 37,
+				Vote = false,
+				RequiresVIP = true,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "DJ",
+				Description = "Play music at events. Earns tips from players.",
+				Team = BustasTeam.Civilians,
+				TeamColor = BustasTeamColors.Civilians,
+				Color = BustasTeamColors.Civilians,
+				Category = "Civilians",
+				Salary = 40f,
+				MaxWorkers = 1,
+				Weapons = new List<string>(),
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = false,
+				SortingLevel = 11,
+				Vote = false,
+				RequiresVIP = true,
 			} );
 		}
 
