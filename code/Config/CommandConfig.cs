@@ -899,7 +899,7 @@ namespace GameSystems.Config
 								string reason = args.Length > 1 ? string.Join(" ", args.Skip(1)) : "No reason given";
 								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "KICK", target.Name, reason);
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You have been kicked: {reason}");
-								target.Connection.Disconnect();
+								target.Connection.Kick();
 								playerStats.SendMessage($"Kicked {target.Name}: {reason}");
 								return true;
 						}
@@ -1134,7 +1134,7 @@ namespace GameSystems.Config
 								BanManager.Ban(target.Connection.SteamId, target.Name, duration, reason, networkPlayer.Name);
 								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "BAN", target.Name, $"{(duration > 0 ? $"{duration}m" : "permanent")} - {reason}");
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You have been banned: {reason}");
-								target.Connection.Disconnect();
+								target.Connection.Kick();
 								playerStats.SendMessage($"Banned {target.Name} for {(duration > 0 ? $"{duration} minutes" : "permanently")}: {reason}");
 								return true;
 						}

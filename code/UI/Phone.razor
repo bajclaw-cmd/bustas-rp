@@ -184,7 +184,7 @@
                         </div>
                         <div class="app-body">
                             <div class="ad-compose">
-                                <div style="font-size: 14px; color: #888; margin-bottom: 5px;">Post an ad ($@(BustasConfig.AdvertCost:N0))</div>
+                                <div style="font-size: 14px; color: #888; margin-bottom: 5px;">Post an ad ($@(BustasConfig.AdvertCost.ToString("N0")))</div>
                                 <TextEntry @ref="AdInput" style="width: 100%;" MaxLength=@(100)></TextEntry>
                                 <button class="ad-btn @(AdOnCooldown ? "disabled" : "")" onclick="@PostAd">
                                     @(AdOnCooldown ? $"Cooldown ({AdCooldownRemaining:F0}s)" : "Post Ad")

@@ -24,7 +24,7 @@ namespace GameSystems.Admin
 			var entry = new LogEntry( DateTime.UtcNow, adminName, adminSteamId, action, target, reason );
 			_logs.Add( entry );
 
-			Sandbox.Log.Info( $"[ADMIN] {adminName} ({adminSteamId}): {action} -> {target} | {reason}" );
+			Log.Info( $"[ADMIN] {adminName} ({adminSteamId}): {action} -> {target} | {reason}" );
 
 			Save();
 		}
@@ -86,7 +86,7 @@ namespace GameSystems.Admin
 			}
 			catch ( Exception e )
 			{
-				Sandbox.Log.Warning( $"Failed to save admin logs: {e.Message}" );
+				Log.Warning( $"Failed to save admin logs: {e.Message}" );
 			}
 		}
 
@@ -109,7 +109,7 @@ namespace GameSystems.Admin
 			}
 			catch ( Exception e )
 			{
-				Sandbox.Log.Warning( $"Failed to load admin logs: {e.Message}" );
+				Log.Warning( $"Failed to load admin logs: {e.Message}" );
 			}
 		}
 	}
