@@ -897,9 +897,9 @@ namespace GameSystems.Config
 								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
 								var networkPlayer = playerStats.GetNetworkPlayer();
 								string reason = args.Length > 1 ? string.Join(" ", args.Skip(1)) : "No reason given";
-								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "KICK", target.Name, reason);
+								AdminLogger.LogAction(networkPlayer.Name, networkPlayer.Connection.SteamId, "KICK", target.Name, reason);
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You have been kicked: {reason}");
-								target.Connection.Kick();
+								target.Connection.Kick( $"Kicked by admin: {reason}" );
 								playerStats.SendMessage($"Kicked {target.Name}: {reason}");
 								return true;
 						}
@@ -920,7 +920,7 @@ namespace GameSystems.Config
 								// Save target's position for /return
 								_returnPositions[target.Connection.Id] = target.GameObject.Transform.Position;
 								target.GameObject.Transform.Position = player.Transform.Position + player.Transform.Rotation * Vector3.Forward * 100;
-								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "BRING", target.Name);
+								AdminLogger.LogAction(networkPlayer.Name, networkPlayer.Connection.SteamId, "BRING", target.Name);
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You have been brought to {networkPlayer.Name}.");
 								playerStats.SendMessage($"Brought {target.Name} to you.");
 								return true;
@@ -946,7 +946,7 @@ namespace GameSystems.Config
 								target.GameObject.Transform.Position = pos;
 								_returnPositions.Remove(target.Connection.Id);
 								var networkPlayer = playerStats.GetNetworkPlayer();
-								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "RETURN", target.Name);
+								AdminLogger.LogAction(networkPlayer.Name, networkPlayer.Connection.SteamId, "RETURN", target.Name);
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage("You have been returned to your previous position.");
 								playerStats.SendMessage($"Returned {target.Name}.");
 								return true;
@@ -969,7 +969,7 @@ namespace GameSystems.Config
 								var cc = target.GameObject.Components.Get<CharacterController>();
 								if (cc != null) cc.Velocity = Vector3.Zero;
 								var networkPlayer = playerStats.GetNetworkPlayer();
-								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "FREEZE", target.Name);
+								AdminLogger.LogAction(networkPlayer.Name, networkPlayer.Connection.SteamId, "FREEZE", target.Name);
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage("You have been frozen by an admin.");
 								playerStats.SendMessage($"Froze {target.Name}.");
 								return true;
@@ -990,7 +990,7 @@ namespace GameSystems.Config
 								var targetController = target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>();
 								if (targetController != null) targetController.EyesLocked = false;
 								var networkPlayer = playerStats.GetNetworkPlayer();
-								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "UNFREEZE", target.Name);
+								AdminLogger.LogAction(networkPlayer.Name, networkPlayer.Connection.SteamId, "UNFREEZE", target.Name);
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage("You have been unfrozen.");
 								playerStats.SendMessage($"Unfroze {target.Name}.");
 								return true;
@@ -1008,7 +1008,7 @@ namespace GameSystems.Config
 								playerStats.SetHealth( playerStats.MaxHealth );
 								bool isGod = playerStats.MaxHealth >= 99999;
 								var networkPlayer = playerStats.GetNetworkPlayer();
-								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, isGod ? "GOD ON" : "GOD OFF", networkPlayer.Name);
+								AdminLogger.LogAction(networkPlayer.Name, networkPlayer.Connection.SteamId, isGod ? "GOD ON" : "GOD OFF", networkPlayer.Name);
 								playerStats.SendMessage($"God mode {(isGod ? "enabled" : "disabled")}.");
 								return true;
 						}
@@ -1030,7 +1030,7 @@ namespace GameSystems.Config
 								if (job == null) { playerStats.SendMessage($"Job '{jobName}' not found."); return false; }
 								gameController.SelectJob(target.Connection.Id, job);
 								var networkPlayer = playerStats.GetNetworkPlayer();
-								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "SETJOB", target.Name, jobName);
+								AdminLogger.LogAction(networkPlayer.Name, networkPlayer.Connection.SteamId, "SETJOB", target.Name, jobName);
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"Your job has been set to {job.Name}.");
 								playerStats.SendMessage($"Set {target.Name}'s job to {job.Name}.");
 								return true;
@@ -1051,7 +1051,7 @@ namespace GameSystems.Config
 								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
 								var networkPlayer = playerStats.GetNetworkPlayer();
 								VIPManager.GrantVIP(target.Connection.SteamId, days, networkPlayer.Name);
-								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "GIVEVIP", target.Name, $"{days} days");
+								AdminLogger.LogAction(networkPlayer.Name, networkPlayer.Connection.SteamId, "GIVEVIP", target.Name, $"{days} days");
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You have been granted VIP for {days} days!");
 								playerStats.SendMessage($"Gave VIP to {target.Name} for {days} days.");
 								return true;
@@ -1071,7 +1071,7 @@ namespace GameSystems.Config
 								if (target == null) { playerStats.SendMessage($"Player {args[0]} not found."); return false; }
 								var networkPlayer = playerStats.GetNetworkPlayer();
 								VIPManager.RemoveVIP(target.Connection.SteamId);
-								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "REMOVEVIP", target.Name);
+								AdminLogger.LogAction(networkPlayer.Name, networkPlayer.Connection.SteamId, "REMOVEVIP", target.Name);
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage("Your VIP status has been removed.");
 								playerStats.SendMessage($"Removed VIP from {target.Name}.");
 								return true;
@@ -1132,9 +1132,9 @@ namespace GameSystems.Config
 								var networkPlayer = playerStats.GetNetworkPlayer();
 								string reason = args.Length > 2 ? string.Join(" ", args.Skip(2)) : "No reason given";
 								BanManager.Ban(target.Connection.SteamId, target.Name, duration, reason, networkPlayer.Name);
-								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "BAN", target.Name, $"{(duration > 0 ? $"{duration}m" : "permanent")} - {reason}");
+								AdminLogger.LogAction(networkPlayer.Name, networkPlayer.Connection.SteamId, "BAN", target.Name, $"{(duration > 0 ? $"{duration}m" : "permanent")} - {reason}");
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You have been banned: {reason}");
-								target.Connection.Kick();
+								target.Connection.Kick( $"Banned: {reason}" );
 								playerStats.SendMessage($"Banned {target.Name} for {(duration > 0 ? $"{duration} minutes" : "permanently")}: {reason}");
 								return true;
 						}
@@ -1151,7 +1151,7 @@ namespace GameSystems.Config
 								if (!ulong.TryParse(args[0], out ulong steamId)) { playerStats.SendMessage("Invalid SteamID."); return false; }
 								var networkPlayer = playerStats.GetNetworkPlayer();
 								if (!BanManager.Unban(steamId)) { playerStats.SendMessage($"SteamID {steamId} is not banned."); return false; }
-								AdminLogger.Log(networkPlayer.Name, networkPlayer.Connection.SteamId, "UNBAN", steamId.ToString());
+								AdminLogger.LogAction(networkPlayer.Name, networkPlayer.Connection.SteamId, "UNBAN", steamId.ToString());
 								playerStats.SendMessage($"Unbanned SteamID {steamId}.");
 								return true;
 						}

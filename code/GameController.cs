@@ -81,7 +81,7 @@ namespace GameSystems
 					var ban = BanManager.GetBan( connection.SteamId );
 					var timeLeft = BanManager.GetBanTimeRemaining( connection.SteamId );
 					Log.Info( $"Banned player tried to connect: {connection.DisplayName} ({connection.SteamId}) - {timeLeft} remaining" );
-					connection.Kick();
+					connection.Kick( "Banned" );
 					return;
 				}
 

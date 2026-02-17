@@ -17,7 +17,7 @@ namespace GameSystems.Admin
 		/// <summary>
 		/// Log an admin action.
 		/// </summary>
-		public static void Log( string adminName, ulong adminSteamId, string action, string target, string reason = "" )
+		public static void LogAction( string adminName, ulong adminSteamId, string action, string target, string reason = "" )
 		{
 			EnsureLoaded();
 
