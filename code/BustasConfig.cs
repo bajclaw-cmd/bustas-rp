@@ -20,6 +20,7 @@ namespace Sandbox.GameSystems
 		public const float MugMaxAmount = 500f;
 		public const float MugCooldown = 300f; // seconds
 		public const float HitMinPrice = 1000f;
+		public const float HitExpireDuration = 600f; // seconds (10 min)
 
 		// VIP
 		public const int VIPExtraDoors = 2;

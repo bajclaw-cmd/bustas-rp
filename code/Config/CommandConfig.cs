@@ -1,4 +1,5 @@
 using System;
+using GameSystems.CriminalEconomy;
 using GameSystems.LawOrder;
 using GameSystems.Player;
 using GameSystems.UI;
@@ -550,6 +551,161 @@ namespace GameSystems.Config
 								// Notify the target and all government
 								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"A search warrant has been issued against you: {reason}");
 								playerStats.SendMessage($"Warrant issued for {target.Name}: {reason}");
+								return true;
+						}
+				)},
+				// ── Criminal Economy Commands ─────────────────────────────
+				{ "hit", new Command(
+						name: "hit",
+						description: "Place a hit or accept one. Usage: /hit <player> <amount> or /hit accept",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								if (networkPlayer == null) return false;
+
+								if (args.Length < 1)
+								{
+									playerStats.SendMessage("Usage: /hit <player> <amount> or /hit accept");
+									return false;
+								}
+
+								// /hit accept - Hitman accepts the first available hit
+								if (args[0].Equals("accept", StringComparison.OrdinalIgnoreCase))
+								{
+									if (networkPlayer.Job?.Name != "Hitman")
+									{
+										playerStats.SendMessage("Only Hitmen can accept hits.");
+										return false;
+									}
+
+									var contract = HitManager.AcceptFirstAvailable(networkPlayer.Connection.Id);
+									if (contract == null)
+									{
+										playerStats.SendMessage("No available hits to accept.");
+										return false;
+									}
+
+									playerStats.SendMessage($"Hit accepted: Kill {contract.TargetName} for ${contract.Amount:N0}.");
+									return true;
+								}
+
+								// /hit <player> <amount> - Place a hit
+								if (args.Length < 2)
+								{
+									playerStats.SendMessage("Usage: /hit <player> <amount>");
+									return false;
+								}
+
+								if (!float.TryParse(args[1], out float amount) || amount <= 0)
+								{
+									playerStats.SendMessage("Invalid amount.");
+									return false;
+								}
+
+								if (amount < Sandbox.GameSystems.BustasConfig.HitMinPrice)
+								{
+									playerStats.SendMessage($"Minimum hit price is ${Sandbox.GameSystems.BustasConfig.HitMinPrice:N0}.");
+									return false;
+								}
+
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null)
+								{
+									playerStats.SendMessage($"Player {args[0]} not found.");
+									return false;
+								}
+
+								// Check if the player can afford it
+								if (!playerStats.UpdateBalance(-amount))
+								{
+									playerStats.SendMessage("You don't have enough money.");
+									return false;
+								}
+
+								if (!HitManager.PlaceHit(networkPlayer.Connection.Id, networkPlayer.Name, target.Connection.Id, target.Name, amount))
+								{
+									// Refund if hit placement failed
+									playerStats.UpdateBalance(amount);
+									playerStats.SendMessage("Cannot place hit. Target may already have an active hit.");
+									return false;
+								}
+
+								playerStats.SendMessage($"Hit placed on {target.Name} for ${amount:N0}.");
+
+								// Notify all online Hitmen
+								foreach (var p in gameController.GetAllPlayers())
+								{
+									if (p.Value.Job?.Name == "Hitman")
+									{
+										p.Value.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"New hit available: {target.Name} for ${amount:N0}. Use /hit accept.");
+									}
+								}
+
+								return true;
+						}
+				)},
+				{ "mug", new Command(
+						name: "mug",
+						description: "Thief: Mug a nearby player. Usage: /mug <player>",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								if (networkPlayer == null) return false;
+
+								// Only Thieves can mug
+								if (networkPlayer.Job?.Name != "Thief")
+								{
+									playerStats.SendMessage("Only Thieves can mug players.");
+									return false;
+								}
+
+								if (args.Length < 1)
+								{
+									playerStats.SendMessage("Usage: /mug <player>");
+									return false;
+								}
+
+								// Check cooldown
+								if (MugManager.IsOnCooldown(networkPlayer.Connection.Id))
+								{
+									float remaining = MugManager.GetCooldownRemaining(networkPlayer.Connection.Id);
+									playerStats.SendMessage($"Mug on cooldown. {remaining:F0}s remaining.");
+									return false;
+								}
+
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null)
+								{
+									playerStats.SendMessage($"Player {args[0]} not found.");
+									return false;
+								}
+
+								// Can't mug government
+								if (target.Job?.IsGovernment == true)
+								{
+									playerStats.SendMessage("You cannot mug government officials.");
+									return false;
+								}
+
+								if (!MugManager.StartMug(networkPlayer.Connection.Id, networkPlayer.Name, target.Connection.Id, target.Name))
+								{
+									playerStats.SendMessage("Cannot mug this player right now.");
+									return false;
+								}
+
+								playerStats.SendMessage($"You are mugging {target.Name}! They have 10 seconds to drop up to ${Sandbox.GameSystems.BustasConfig.MugMaxAmount:N0}.");
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You are being mugged by {networkPlayer.Name}! Drop up to ${Sandbox.GameSystems.BustasConfig.MugMaxAmount:N0} or resist! (10 seconds)");
+
 								return true;
 						}
 				)}

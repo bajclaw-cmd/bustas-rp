@@ -1,5 +1,6 @@
 using System;
 using GameSystems.Jobs;
+using GameSystems.CriminalEconomy;
 using GameSystems.LawOrder;
 using GameSystems.Player;
 using GameSystems.UI;
@@ -120,6 +121,12 @@ namespace GameSystems
 
 				// Clean up wanted status for disconnecting player
 				WantedManager.RemoveWanted( connection.Id );
+
+				// Clean up hit contracts involving this player
+				HitManager.RemovePlayerHits( connection.Id );
+
+				// Clean up mug state for this player
+				MugManager.RemovePlayer( connection.Id );
 
 				// Perform clean up functions
 				var playerStats = player.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>();

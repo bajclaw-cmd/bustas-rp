@@ -3,7 +3,7 @@ using Sandbox.GameSystems;
 namespace GameSystems.Jobs
 {
 	/// <summary>
-	/// Defines all 11 standard Bustas RP jobs in code.
+	/// Defines all 23 standard Bustas RP jobs in code.
 	/// These are registered into JobProvider at startup.
 	/// </summary>
 	public static class BustasJobs
@@ -104,6 +104,114 @@ namespace GameSystems.Jobs
 				Vote = false,
 			} );
 
+			Register( new JobResource
+			{
+				Name = "Taxi Driver",
+				Description = "Drive players around for tips. Free taxi vehicle.",
+				Team = BustasTeam.Civilians,
+				TeamColor = BustasTeamColors.Civilians,
+				Color = BustasTeamColors.Civilians,
+				Category = "Civilians",
+				Salary = 35f,
+				MaxWorkers = 3,
+				Weapons = new List<string>(),
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = false,
+				SortingLevel = 5,
+				Vote = false,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "Tow Truck Driver",
+				Description = "Tow illegally parked vehicles. Free tow truck.",
+				Team = BustasTeam.Civilians,
+				TeamColor = BustasTeamColors.Civilians,
+				Color = BustasTeamColors.Civilians,
+				Category = "Civilians",
+				Salary = 40f,
+				MaxWorkers = 2,
+				Weapons = new List<string>(),
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = false,
+				SortingLevel = 6,
+				Vote = false,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "Mechanic",
+				Description = "Repair damaged vehicles for $200-500.",
+				Team = BustasTeam.Civilians,
+				TeamColor = BustasTeamColors.Civilians,
+				Color = BustasTeamColors.Civilians,
+				Category = "Civilians",
+				Salary = 40f,
+				MaxWorkers = 2,
+				Weapons = new List<string>(),
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = false,
+				SortingLevel = 7,
+				Vote = false,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "Chef",
+				Description = "Cook and sell food that heals players.",
+				Team = BustasTeam.Civilians,
+				TeamColor = BustasTeamColors.Civilians,
+				Color = BustasTeamColors.Civilians,
+				Category = "Civilians",
+				Salary = 35f,
+				MaxWorkers = 2,
+				Weapons = new List<string>(),
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = false,
+				SortingLevel = 8,
+				Vote = false,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "Security Guard",
+				Description = "Hired to protect shops and bases. Can carry weapons.",
+				Team = BustasTeam.Civilians,
+				TeamColor = BustasTeamColors.Civilians,
+				Color = BustasTeamColors.Civilians,
+				Category = "Civilians",
+				Salary = 45f,
+				MaxWorkers = 4,
+				Weapons = new List<string> { "pistol" },
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = false,
+				SortingLevel = 9,
+				Vote = false,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "Car Dealer",
+				Description = "Sell vehicles to players from your dealership.",
+				Team = BustasTeam.Civilians,
+				TeamColor = BustasTeamColors.Civilians,
+				Color = BustasTeamColors.Civilians,
+				Category = "Civilians",
+				Salary = 50f,
+				MaxWorkers = 1,
+				Weapons = new List<string>(),
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = false,
+				SortingLevel = 10,
+				Vote = false,
+			} );
+
 			// ── Government ─────────────────────────────────────────────
 
 			Register( new JobResource
@@ -120,7 +228,7 @@ namespace GameSystems.Jobs
 				CanOwnDoors = false,
 				IsGovernment = true,
 				IsCriminal = false,
-				SortingLevel = 10,
+				SortingLevel = 20,
 				Vote = false,
 			} );
 
@@ -138,7 +246,7 @@ namespace GameSystems.Jobs
 				CanOwnDoors = false,
 				IsGovernment = true,
 				IsCriminal = false,
-				SortingLevel = 11,
+				SortingLevel = 21,
 				Vote = false,
 			} );
 
@@ -156,7 +264,7 @@ namespace GameSystems.Jobs
 				CanOwnDoors = false,
 				IsGovernment = true,
 				IsCriminal = false,
-				SortingLevel = 12,
+				SortingLevel = 22,
 				Vote = true,
 			} );
 
@@ -174,7 +282,7 @@ namespace GameSystems.Jobs
 				CanOwnDoors = false,
 				IsGovernment = true,
 				IsCriminal = false,
-				SortingLevel = 13,
+				SortingLevel = 23,
 				Vote = false,
 			} );
 
@@ -192,7 +300,7 @@ namespace GameSystems.Jobs
 				CanOwnDoors = true,
 				IsGovernment = true,
 				IsCriminal = false,
-				SortingLevel = 14,
+				SortingLevel = 24,
 				Vote = true,
 			} );
 
@@ -210,7 +318,117 @@ namespace GameSystems.Jobs
 				CanOwnDoors = false,
 				IsGovernment = true,
 				IsCriminal = false,
-				SortingLevel = 15,
+				SortingLevel = 25,
+				Vote = false,
+			} );
+
+			// ── Criminals ──────────────────────────────────────────────
+
+			Register( new JobResource
+			{
+				Name = "Hitman",
+				Description = "Accept hits on players. /hit accept to take contracts.",
+				Team = BustasTeam.Criminals,
+				TeamColor = BustasTeamColors.Criminals,
+				Color = BustasTeamColors.Criminals,
+				Category = "Criminals",
+				Salary = 30f,
+				MaxWorkers = 2,
+				Weapons = new List<string> { "pistol" },
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = true,
+				SortingLevel = 30,
+				Vote = false,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "Thief",
+				Description = "Pick locks, steal items. Can mug players for up to $500.",
+				Team = BustasTeam.Criminals,
+				TeamColor = BustasTeamColors.Criminals,
+				Color = BustasTeamColors.Criminals,
+				Category = "Criminals",
+				Salary = 20f,
+				MaxWorkers = 4,
+				Weapons = new List<string> { "lockpick" },
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = true,
+				SortingLevel = 31,
+				Vote = false,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "Bank Robber",
+				Description = "Rob the bank vault. Requires 2+ robbers to start a heist.",
+				Team = BustasTeam.Criminals,
+				TeamColor = BustasTeamColors.Criminals,
+				Color = BustasTeamColors.Criminals,
+				Category = "Criminals",
+				Salary = 15f,
+				MaxWorkers = 3,
+				Weapons = new List<string> { "pistol" },
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = true,
+				SortingLevel = 32,
+				Vote = false,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "Drug Dealer",
+				Description = "Cook and sell drugs. Keep your lab hidden from police.",
+				Team = BustasTeam.Criminals,
+				TeamColor = BustasTeamColors.Criminals,
+				Color = BustasTeamColors.Criminals,
+				Category = "Criminals",
+				Salary = 25f,
+				MaxWorkers = 3,
+				Weapons = new List<string>(),
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = true,
+				SortingLevel = 33,
+				Vote = false,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "Gang Leader",
+				Description = "Lead a gang. Can recruit Gang Members and set gang base.",
+				Team = BustasTeam.Criminals,
+				TeamColor = BustasTeamColors.Criminals,
+				Color = BustasTeamColors.Criminals,
+				Category = "Criminals",
+				Salary = 35f,
+				MaxWorkers = 2,
+				Weapons = new List<string> { "pistol", "smg" },
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = true,
+				SortingLevel = 34,
+				Vote = false,
+			} );
+
+			Register( new JobResource
+			{
+				Name = "Gang Member",
+				Description = "Follow your Gang Leader. Protect gang territory.",
+				Team = BustasTeam.Criminals,
+				TeamColor = BustasTeamColors.Criminals,
+				Color = BustasTeamColors.Criminals,
+				Category = "Criminals",
+				Salary = 20f,
+				MaxWorkers = 6,
+				Weapons = new List<string> { "pistol" },
+				CanOwnDoors = true,
+				IsGovernment = false,
+				IsCriminal = true,
+				SortingLevel = 35,
 				Vote = false,
 			} );
 		}
