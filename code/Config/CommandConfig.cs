@@ -1,4 +1,5 @@
 using System;
+using GameSystems.LawOrder;
 using GameSystems.Player;
 using GameSystems.UI;
 using Sandbox.GameSystems.Config;
@@ -341,6 +342,214 @@ namespace GameSystems.Config
 								targetPlayer.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You have been teleported by {playerStats.GetNetworkPlayer().Name}.");
 								playerStats.SendMessage($"You have teleported {targetPlayer.Connection.DisplayName} to your location.");
 
+								return true;
+						}
+				)},
+				// ── Law & Order Commands ──────────────────────────────────
+				{ "laws", new Command(
+						name: "laws",
+						description: "Shows all current city laws.",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+
+								foreach (var line in LawManager.GetFormattedLaws())
+								{
+									playerStats.SendMessage(line);
+								}
+								return true;
+						}
+				)},
+				{ "addlaw", new Command(
+						name: "addlaw",
+						description: "Mayor adds a new law. Usage: /addlaw <law text>",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+
+								// Check if player is Mayor
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								if (networkPlayer?.Job?.Name != "Mayor")
+								{
+									playerStats.SendMessage("Only the Mayor can add laws.");
+									return false;
+								}
+
+								if (args.Length < 1)
+								{
+									playerStats.SendMessage("Usage: /addlaw <law text>");
+									return false;
+								}
+
+								string lawText = string.Join(" ", args);
+								if (!LawManager.AddLaw(lawText))
+								{
+									playerStats.SendMessage($"Cannot add law. Maximum {Sandbox.GameSystems.BustasConfig.MaxLaws} laws allowed.");
+									return false;
+								}
+
+								playerStats.SendMessage($"Law added: {lawText}");
+								return true;
+						}
+				)},
+				{ "removelaw", new Command(
+						name: "removelaw",
+						description: "Mayor removes a law by number. Usage: /removelaw <number>",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								if (networkPlayer?.Job?.Name != "Mayor")
+								{
+									playerStats.SendMessage("Only the Mayor can remove laws.");
+									return false;
+								}
+
+								if (args.Length < 1 || !int.TryParse(args[0], out int lawNum))
+								{
+									playerStats.SendMessage("Usage: /removelaw <number>");
+									return false;
+								}
+
+								if (!LawManager.RemoveLaw(lawNum))
+								{
+									playerStats.SendMessage($"Invalid law number. Use /laws to see current laws.");
+									return false;
+								}
+
+								playerStats.SendMessage($"Law #{lawNum} removed.");
+								return true;
+						}
+				)},
+				{ "wanted", new Command(
+						name: "wanted",
+						description: "Police: Set a player as wanted. Usage: /wanted <player> <reason>",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								if (networkPlayer?.Job == null || !networkPlayer.Job.IsGovernment)
+								{
+									playerStats.SendMessage("Only government officials can set players as wanted.");
+									return false;
+								}
+
+								if (args.Length < 2)
+								{
+									playerStats.SendMessage("Usage: /wanted <player> <reason>");
+									return false;
+								}
+
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null)
+								{
+									playerStats.SendMessage($"Player {args[0]} not found.");
+									return false;
+								}
+
+								string reason = string.Join(" ", args.Skip(1));
+								WantedManager.SetWanted(target.Connection.Id, reason);
+
+								// Notify the target
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"You are now WANTED: {reason}");
+								playerStats.SendMessage($"{target.Name} is now wanted: {reason}");
+								return true;
+						}
+				)},
+				{ "unwanted", new Command(
+						name: "unwanted",
+						description: "Police: Remove wanted status. Usage: /unwanted <player>",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								if (networkPlayer?.Job == null || !networkPlayer.Job.IsGovernment)
+								{
+									playerStats.SendMessage("Only government officials can remove wanted status.");
+									return false;
+								}
+
+								if (args.Length < 1)
+								{
+									playerStats.SendMessage("Usage: /unwanted <player>");
+									return false;
+								}
+
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null)
+								{
+									playerStats.SendMessage($"Player {args[0]} not found.");
+									return false;
+								}
+
+								if (!WantedManager.IsWanted(target.Connection.Id))
+								{
+									playerStats.SendMessage($"{target.Name} is not wanted.");
+									return false;
+								}
+
+								WantedManager.RemoveWanted(target.Connection.Id);
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage("You are no longer wanted.");
+								playerStats.SendMessage($"{target.Name} is no longer wanted.");
+								return true;
+						}
+				)},
+				{ "warrant", new Command(
+						name: "warrant",
+						description: "Chief/Mayor: Issue a search warrant. Usage: /warrant <player> <reason>",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								var jobName = networkPlayer?.Job?.Name ?? "";
+								if (jobName != "Police Chief" && jobName != "Mayor" && jobName != "Police Sergeant")
+								{
+									playerStats.SendMessage("Only the Police Chief, Police Sergeant, or Mayor can issue warrants.");
+									return false;
+								}
+
+								if (args.Length < 2)
+								{
+									playerStats.SendMessage("Usage: /warrant <player> <reason>");
+									return false;
+								}
+
+								var gameController = GameSystems.GameController.Instance;
+								var target = gameController?.PlayerLookup(args[0]);
+								if (target == null)
+								{
+									playerStats.SendMessage($"Player {args[0]} not found.");
+									return false;
+								}
+
+								string reason = string.Join(" ", args.Skip(1));
+								if (!WarrantManager.IssueWarrant(target.Connection.Id, target.Name, reason, networkPlayer.Connection.Id))
+								{
+									playerStats.SendMessage($"Cannot issue warrant. Max {Sandbox.GameSystems.BustasConfig.MaxActiveWarrants} active warrants, or player already has a warrant.");
+									return false;
+								}
+
+								// Notify the target and all government
+								target.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage($"A search warrant has been issued against you: {reason}");
+								playerStats.SendMessage($"Warrant issued for {target.Name}: {reason}");
 								return true;
 						}
 				)}

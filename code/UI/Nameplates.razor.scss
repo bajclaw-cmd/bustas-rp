@@ -7,6 +7,7 @@ Nameplates {
 	background-color: #ffffff00;
 	justify-content: center;
 	align-items: center;
+	flex-direction: column;
 	font-weight: bold;
 	border-radius: 20px;
 
@@ -14,5 +15,14 @@ Nameplates {
 		font-size: 30px;
 		font-family: Poppins;
 		color: #fff;
+	}
+
+	.wanted {
+		font-size: 24px;
+		font-family: Poppins;
+		color: #E74C3C;
+		background-color: rgba(0, 0, 0, 0.6);
+		padding: 2px 8px;
+		border-radius: 4px;
 	}
 }

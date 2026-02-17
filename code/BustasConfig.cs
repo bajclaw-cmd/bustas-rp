@@ -50,5 +50,12 @@ namespace Sandbox.GameSystems
 		// Printer - Overheat
 		public const float PrinterExplosionTimer = 30f; // seconds before overheated printer explodes
 		public const int MaxPrintersPerPlayer = 5;
+
+		// Law & Order
+		public const int MaxLaws = 10;
+		public const int MaxLawLength = 100;
+		public const float WantedDuration = 300f; // seconds (5 min)
+		public const float WarrantDuration = 180f; // seconds (3 min)
+		public const int MaxActiveWarrants = 2;
 	}
 }

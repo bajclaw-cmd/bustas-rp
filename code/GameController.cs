@@ -1,5 +1,6 @@
 using System;
 using GameSystems.Jobs;
+using GameSystems.LawOrder;
 using GameSystems.Player;
 using GameSystems.UI;
 using Sandbox.GameSystems.Database;
@@ -109,6 +110,16 @@ namespace GameSystems
 					Log.Warning( $"Player not found in the list: {connection.Id}" );
 					return;
 				}
+
+				// If Mayor is leaving, reset laws
+				if ( player.Job?.Name == "Mayor" )
+				{
+					LawManager.OnMayorLeave();
+					chat?.NewSystemMessage( "The Mayor has left. Laws have been reset." );
+				}
+
+				// Clean up wanted status for disconnecting player
+				WantedManager.RemoveWanted( connection.Id );
 
 				// Perform clean up functions
 				var playerStats = player.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>();
@@ -220,7 +231,21 @@ namespace GameSystems
 			var networkPlayer = GetPlayerByConnectionId( ownerId );
 			if ( networkPlayer != null )
 			{
+				// If leaving Mayor job, reset laws
+				if ( networkPlayer.Job?.Name == "Mayor" && job?.Name != "Mayor" )
+				{
+					LawManager.OnMayorLeave();
+					chat?.NewSystemMessage( "The Mayor has stepped down. Laws have been reset." );
+				}
+
 				networkPlayer.Job = job;
+
+				// If becoming Mayor, activate law system
+				if ( job?.Name == "Mayor" )
+				{
+					LawManager.OnMayorActive();
+					chat?.NewSystemMessage( $"{networkPlayer.Name} is now the Mayor!" );
+				}
 			}
 		}
 	}

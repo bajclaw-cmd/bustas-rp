@@ -1,33 +1,53 @@
 @using Sandbox;
 @using Sandbox.UI;
+@using global::GameSystems
+@using global::GameSystems.LawOrder
+@using Sandbox.GameSystems.Player;
 @inherits PanelComponent
 
 <root>
     <div class="name">@Name.Truncate(13)</div>
+    @if (IsWanted && IsViewerGovernment)
+    {
+        <div class="wanted">WANTED</div>
+    }
 </root>
 
 @code
-
 {
-    // Currently the nameplate doesn't adapt well with the player size, so we need to find a workaround //
-
     string Name;
+    bool IsWanted = false;
+    bool IsViewerGovernment = false;
 
     protected override void OnStart()
     {
-        // we are not the local network player show the nameplate to everyone
-        if (!Network.IsOwner) { ShowNameplate(); } 
+        if (!Network.IsOwner) { ShowNameplate(); }
     }
 
     [Broadcast]
     public void ShowNameplate()
-
     {
-        if (!Network.IsOwner && GameObject.Parent.IsValid) { Name = GameObject.Parent.Network.OwnerConnection.DisplayName; } 
+        if (!Network.IsOwner && GameObject.Parent.IsValid)
+        {
+            Name = GameObject.Parent.Network.OwnerConnection.DisplayName;
+        }
     }
 
-	/// <summary>
-    /// the hash determines if the system should be rebuilt. If it changes, it will be rebuilt
-    /// </summary>
-    protected override int BuildHash() => System.HashCode.Combine(Name);
+    protected override void OnFixedUpdate()
+    {
+        if (Network.IsOwner || !GameObject.Parent.IsValid) return;
+
+        // Check if the target player is wanted
+        var targetConnection = GameObject.Parent.Network.OwnerConnection;
+        if (targetConnection != null)
+        {
+            IsWanted = WantedManager.IsWanted(targetConnection.Id);
+        }
+
+        // Check if the local viewer is government
+        var me = GameController.Instance?.GetMe();
+        IsViewerGovernment = me?.Job?.IsGovernment ?? false;
+    }
+
+    protected override int BuildHash() => System.HashCode.Combine(Name, IsWanted, IsViewerGovernment);
 }
