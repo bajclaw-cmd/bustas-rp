@@ -8,7 +8,10 @@
 @using global::Entity.Interactable.Props
 @using global::Entity.Vehicle
 @using global::GameSystems
+@using global::GameSystems.Admin
+@using global::GameSystems.Config
 @using global::GameSystems.Jobs
+@using global::GameSystems.Player
 @using Sandbox.Entities.Interactable.Props
 @using Sandbox.GameSystems
 @using Sandbox.GameSystems.Player
@@ -240,9 +243,86 @@
             <div class="section" style="display: @(IsAdminVisible ? "flex" : "none");">
                 <div class="section-title">Admin Tools</div>
                 <div class="section-contents">
-                    <div class="info" style="color: red;">
-                        <h1>TODO</h1>
-                    </div>
+                    @if ( !IsAdmin )
+                    {
+                        <div class="info" style="color: #888;">
+                            <h2>Access Denied</h2>
+                            <p>You need Moderator+ permissions to access admin tools.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="info" style="color: white; margin-bottom: 10px;">
+                            <h2>Server Info</h2>
+                            <p>Players: @GameController?.GetAllPlayers()?.Count / @BustasConfig.MaxPlayers</p>
+                        </div>
+
+                        <div class="section-title" style="font-size: 16px;">Player Management</div>
+                        @foreach ( var kvp in GameController.GetAllPlayers() )
+                        {
+                            var p = kvp.Value;
+                            var group = p.GetHighestUserGroup();
+                            var playerStats = p.GameObject.Components.Get<Player>();
+                            var isExpanded = _adminExpandedPlayer == p;
+
+                            <div class="button" onclick=@(() => ToggleAdminPlayer(p))
+                                 style="flex-direction: column; align-items: stretch;">
+                                <div style="flex-direction: row; align-items: center; gap: 8px;">
+                                    <div style="background-color: @(group.Color.Hex); width: 8px; height: 8px; border-radius: 50%;"></div>
+                                    <div class="label-container" style="flex: 1;">
+                                        <div class="label">@p.Name</div>
+                                        <span class="description">@p.Job?.Name | @group.DisplayName | $@(playerStats?.Balance.ToString("N0") ?? "0")</span>
+                                    </div>
+                                </div>
+
+                                @if ( isExpanded )
+                                {
+                                    <div style="flex-direction: row; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #333;">
+                                        <button class="button" style="padding: 6px 12px; font-size: 12px;"
+                                                onclick=@(() => RunAdminAction("bring", p.Name))>
+                                            <i class="icon" style="font-size: 14px;">person_pin</i> Bring
+                                        </button>
+                                        <button class="button" style="padding: 6px 12px; font-size: 12px;"
+                                                onclick=@(() => RunAdminAction("tp", p.Name))>
+                                            <i class="icon" style="font-size: 14px;">near_me</i> Goto
+                                        </button>
+                                        <button class="button" style="padding: 6px 12px; font-size: 12px;"
+                                                onclick=@(() => RunAdminAction("return", p.Name))>
+                                            <i class="icon" style="font-size: 14px;">undo</i> Return
+                                        </button>
+                                        <button class="button" style="padding: 6px 12px; font-size: 12px;"
+                                                onclick=@(() => RunAdminAction("freeze", p.Name))>
+                                            <i class="icon" style="font-size: 14px;">ac_unit</i> Freeze
+                                        </button>
+                                        <button class="button" style="padding: 6px 12px; font-size: 12px;"
+                                                onclick=@(() => RunAdminAction("unfreeze", p.Name))>
+                                            <i class="icon" style="font-size: 14px;">ac_unit</i> Unfreeze
+                                        </button>
+                                        <button class="button" style="padding: 6px 12px; font-size: 12px;"
+                                                onclick=@(() => RunAdminAction("god", p.Name))>
+                                            <i class="icon" style="font-size: 14px;">shield</i> God
+                                        </button>
+                                        <button class="button" style="padding: 6px 12px; font-size: 12px;"
+                                                onclick=@(() => RunAdminAction("kick", p.Name))>
+                                            <i class="icon" style="font-size: 14px;">logout</i> Kick
+                                        </button>
+                                        <button class="button" style="padding: 6px 12px; font-size: 12px; color: #E74C3C;"
+                                                onclick=@(() => RunAdminAction("ban", p.Name))>
+                                            <i class="icon" style="font-size: 14px;">block</i> Ban
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <div class="section-title" style="font-size: 16px; margin-top: 15px;">Recent Admin Logs</div>
+                        <div class="info" style="color: #ccc; font-size: 13px;">
+                            @foreach ( var log in AdminLogger.GetFormattedLogs( 10 ) )
+                            {
+                                <p style="margin: 2px 0; color: #aaa;">@log</p>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -624,5 +704,50 @@
         }
     }
 
-    protected override int BuildHash() => System.HashCode.Combine(PropManager?.PropCount(), CurrentPrinter, CurrentVehicleCount);
+    // ── Admin Panel ────────────────────────────────────────────────
+
+    private NetworkPlayer _adminExpandedPlayer;
+
+    private bool IsAdmin
+    {
+        get
+        {
+            var me = GameController?.GetMe();
+            return me?.CheckPermission( PermissionLevel.Moderator ) ?? false;
+        }
+    }
+
+    private void ToggleAdminPlayer( NetworkPlayer p )
+    {
+        _adminExpandedPlayer = _adminExpandedPlayer == p ? null : p;
+        Sound.Play( "audio/select.sound" );
+    }
+
+    private void RunAdminAction( string command, string targetName )
+    {
+        var commandConfig = Scene.Directory.FindByName( "Screen" )?.First()?.Components.Get<CommandConfig>();
+        if ( commandConfig == null ) return;
+
+        var me = GameController?.GetMe();
+        if ( me == null ) return;
+
+        if ( command == "ban" )
+        {
+            commandConfig.ExecuteCommand( "ban", me.GameObject, Scene, new[] { targetName, "60", "Banned from admin panel" } );
+        }
+        else
+        {
+            commandConfig.ExecuteCommand( command, me.GameObject, Scene, new[] { targetName } );
+        }
+
+        Sound.Play( "audio/select.sound" );
+    }
+
+    protected override int BuildHash() => System.HashCode.Combine(
+        PropManager?.PropCount(),
+        CurrentPrinter,
+        CurrentVehicleCount,
+        _adminExpandedPlayer,
+        IsAdminVisible ? GameController?.GetAllPlayers()?.Count : 0
+    );
 }

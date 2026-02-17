@@ -34,6 +34,13 @@ namespace Sandbox.GameSystems.Player
 		private bool _nlrWarningShown = false;
 		private TimeSince _lastNLRWarning = 0;
 
+		// Kill attribution
+		public string LastAttacker { get; set; } = "";
+
+		// Health regeneration
+		private TimeSince _lastDamageTaken = 999f;
+		private TimeSince _lastRegenTick = 0;
+
 		// TODO add a "/sellallowneddoors" command to sell all doors owned by the player
 
 		private void OnStartStatus()
@@ -77,11 +84,24 @@ namespace Sandbox.GameSystems.Player
 				}
 				_lastUsedFood = 0; // reset the timer
 			}
+
+			// Health regeneration (only when not recently damaged, not dead, and not starving)
+			if ( !Dead && Health < MaxHealth && Health > 0 && Hunger > BustasConfig.HealthRegenMinHunger )
+			{
+				if ( _lastDamageTaken >= BustasConfig.HealthRegenDelay && _lastRegenTick >= BustasConfig.HealthRegenInterval )
+				{
+					Health += BustasConfig.HealthRegenRate;
+					if ( Health > MaxHealth ) Health = MaxHealth;
+					_lastRegenTick = 0;
+				}
+			}
+
 			if ( Health < 1 || Hunger < 1 )
 			{
 				if ( !Dead )
 				{
-					OnDeath();
+					OnDeath( LastAttacker );
+					LastAttacker = "";
 				}
 				Dead = true;
 				Health = 0;
@@ -106,7 +126,7 @@ namespace Sandbox.GameSystems.Player
 		}
 
 		/// <summary>
-		/// Called when the player dies. Records NLR and shows death screen.
+		/// Called when the player dies. Records NLR, cleans up weapons, and shows death screen.
 		/// </summary>
 		private void OnDeath( string killerName = "" )
 		{
@@ -116,6 +136,9 @@ namespace Sandbox.GameSystems.Player
 				// Record death position for NLR
 				NLRManager.RecordDeath( networkPlayer.Connection.Id, GameObject.Transform.Position );
 			}
+
+			// Clean up weapons on death
+			ClearInventory();
 
 			// Show death screen
 			DeathScreen?.Show( killerName );
@@ -131,6 +154,8 @@ namespace Sandbox.GameSystems.Player
 			Dead = false;
 			Health = MaxHealth;
 			Hunger = HungerMax;
+			LastAttacker = "";
+			_lastDamageTaken = 999f;
 
 			// Find a spawn point and teleport there
 			var spawnPoints = Scene.GetAllComponents<SpawnPoint>().ToList();
@@ -141,6 +166,9 @@ namespace Sandbox.GameSystems.Player
 				GameObject.Transform.Position = spawn.Transform.Position;
 				GameObject.Transform.Rotation = spawn.Transform.Rotation;
 			}
+
+			// Re-equip default items
+			OnStartInventory();
 
 			DeathScreen?.Hide();
 			_nlrWarningShown = false;
@@ -193,6 +221,10 @@ namespace Sandbox.GameSystems.Player
 
 		public void SetHealth( float amount )
 		{
+			if ( amount < Health )
+			{
+				_lastDamageTaken = 0;
+			}
 			Health = amount;
 		}
 

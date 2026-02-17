@@ -27,6 +27,7 @@ public partial class Player
 	private RealTimeSince _lastGrounded;
 	private RealTimeSince _lastUngrounded;
 	private RealTimeSince _lastJump;
+	private float _highestFallSpeed = 0f;
 
 	public void OnStartMovement()
 	{
@@ -214,10 +215,22 @@ public partial class Player
 
 		if (cc.IsOnGround)
 		{
+			// Apply fall damage on landing
+			if ( _highestFallSpeed > BustasConfig.FallDamageThreshold && !IsNoClip )
+			{
+				float damage = (_highestFallSpeed - BustasConfig.FallDamageThreshold) * BustasConfig.FallDamageMultiplier;
+				damage = Math.Min( damage, BustasConfig.MaxFallDamage );
+				SetHealth( Health - damage );
+			}
+			_highestFallSpeed = 0f;
 			_lastGrounded = 0;
 		}
 		else
 		{
+			// Track highest fall speed while airborne
+			var fallSpeed = -cc.Velocity.z;
+			if ( fallSpeed > _highestFallSpeed )
+				_highestFallSpeed = fallSpeed;
 			_lastUngrounded = 0;
 		}
 	}

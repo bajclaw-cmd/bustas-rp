@@ -85,5 +85,16 @@ namespace Sandbox.GameSystems
 		public const float NLRDuration = 180f; // seconds (3 min)
 		public const float NLRRadius = 500f; // units - can't return within this radius of death
 		public const float RaidCooldown = 600f; // seconds (10 min)
+
+		// Fall Damage
+		public const float FallDamageThreshold = 400f; // min fall speed to take damage
+		public const float FallDamageMultiplier = 0.1f; // damage per unit of speed above threshold
+		public const float MaxFallDamage = 80f; // cap so falls don't always instant-kill
+
+		// Health Regeneration
+		public const float HealthRegenDelay = 10f; // seconds after last damage before regen starts
+		public const float HealthRegenRate = 2f; // HP per tick
+		public const float HealthRegenInterval = 1f; // seconds between regen ticks
+		public const float HealthRegenMinHunger = 20f; // minimum hunger to regenerate
 	}
 }

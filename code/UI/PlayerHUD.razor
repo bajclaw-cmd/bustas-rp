@@ -1,6 +1,7 @@
 @namespace GameSystems.UI
 @using global::GameSystems
 @using global::GameSystems.LawOrder
+@using global::Scenebox
 @using Sandbox;
 @using Sandbox.GameSystems;
 @using Sandbox.GameSystems.Player;
@@ -112,6 +113,22 @@
         }
     </div>
 
+    @{
+        var activeWeapon = GetActiveWeapon();
+    }
+    @if ( activeWeapon != null && activeWeapon.Resource != null && activeWeapon.Resource.HasAmmo )
+    {
+        <div class="ammo-display">
+            <span class="ammo-clip">@activeWeapon.CurrentClip</span>
+            <span class="ammo-separator">/</span>
+            <span class="ammo-reserve">@activeWeapon.ReserveAmmo</span>
+            @if ( activeWeapon.IsReloading )
+            {
+                <span class="ammo-reloading">RELOADING</span>
+            }
+        </div>
+    }
+
 </root>
 
 @code
@@ -155,7 +172,12 @@
     protected override void OnFixedUpdate()
     {
         Notifications.RemoveAll(x => x.timeSinceAdded > 5);
+    }
 
+    private Weapon GetActiveWeapon()
+    {
+        if ( PlayerPrefab == null ) return null;
+        return PlayerPrefab.Components.GetInDescendants<Weapon>();
     }
 
     /// <summary>
@@ -166,14 +188,14 @@
 	    var player = PlayerPrefab.Components.Get<Player>();
 	    var networkPlayer = player?.GetNetworkPlayer();
 	    var isWanted = networkPlayer != null && WantedManager.IsWanted( networkPlayer.Connection.Id );
+	    var weapon = GetActiveWeapon();
 	    return System.HashCode.Combine( MyStringValue,
 		    networkPlayer?.Job?.Name,
 		    player.Balance,
 		    player.Hunger,
 		    player.Health,
 		    player.IsInventoryVisible,
-		    player.CurrentSelectedSlot,
-		    System.HashCode.Combine( Notifications.Count, isWanted )
+		    System.HashCode.Combine( player.CurrentSelectedSlot, Notifications.Count, isWanted, weapon?.CurrentClip, weapon?.IsReloading )
 	    );
     }
 }

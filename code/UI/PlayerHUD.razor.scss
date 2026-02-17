@@ -244,4 +244,37 @@ PlayerHUD {
 			}
 		}
 	}
+
+	.ammo-display {
+		position: absolute;
+		bottom: 30px;
+		right: 30px;
+		flex-direction: row;
+		align-items: baseline;
+		gap: 4px;
+		font-family: 'Poppins', sans-serif;
+		text-shadow: 2px 2px 4px #000000;
+
+		.ammo-clip {
+			font-size: 36px;
+			font-weight: bold;
+			color: white;
+		}
+
+		.ammo-separator {
+			font-size: 20px;
+			color: #888;
+		}
+
+		.ammo-reserve {
+			font-size: 20px;
+			color: #aaa;
+		}
+
+		.ammo-reloading {
+			font-size: 14px;
+			color: #FFD700;
+			margin-left: 8px;
+		}
+	}
 }

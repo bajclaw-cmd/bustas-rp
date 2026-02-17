@@ -1,4 +1,6 @@
+using System.Linq;
 using Sandbox.GameResources;
+using Scenebox;
 
 namespace Sandbox.GameSystems.Player;
 
@@ -15,8 +17,18 @@ public partial class Player
 	private TimeSince _timeSinceLastVisible = 0;
 	private bool _inputDetected;
 
+	// Currently equipped weapon instance
+	private GameObject _equippedWeaponObject;
+	[Sync] public int ActiveWeaponSlot { get; set; } = 1;
+
 	private void OnStartInventory()
 	{
+		// Destroy any existing equipped weapon
+		if ( _equippedWeaponObject != null && _equippedWeaponObject.IsValid )
+		{
+			_equippedWeaponObject.Destroy();
+			_equippedWeaponObject = null;
+		}
 
 		// Initialize the inventory slots
 		InventorySlots = new WeaponResource[MaxSlots];
@@ -27,6 +39,9 @@ public partial class Player
 			AddItem( weaponResource );
 		}
 
+		// Equip slot 1 (hands) by default
+		CurrentSelectedSlot = 1;
+		EquipItem( 1 );
 	}
 
 	protected void OnFixedUpdateInventory()
@@ -35,14 +50,14 @@ public partial class Player
 	}
 
 	// Add the desired item to the inventory
-	public void AddItem(WeaponResource resource)
+	public void AddItem( WeaponResource resource )
 	{
-		int slotIndex = resource.Slot-1;
+		int slotIndex = resource.Slot - 1;
 
-		if ( slotIndex >= 0 && slotIndex <= MaxSlots )
+		if ( slotIndex >= 0 && slotIndex < MaxSlots )
 		{
 			InventorySlots[slotIndex] = resource;
-			Log.Info( $"Weapon {resource.Name} equipped in slot {slotIndex + 1}" );
+			Log.Info( $"Weapon {resource.Name} added to slot {slotIndex + 1}" );
 		}
 		else
 		{
@@ -51,43 +66,111 @@ public partial class Player
 	}
 
 	// Equip the desired Item from the slot
-	public void EquipItem(int slot)
+	public void EquipItem( int slot )
 	{
-		if ( slot >= 1 && slot <= MaxSlots )
-		{
-			var equippedItem = InventorySlots[slot-1];
-			if ( equippedItem != null )
-			{
-				Log.Info( $"Equipped weapon: {equippedItem.Name} from slot {slot}" );
-			}
-			else
-			{
-				Log.Info( $"No weapon to equip in slot {slot}" );
-			}
-		}
-		else
+		if ( slot < 1 || slot > MaxSlots )
 		{
 			Log.Warning( "Invalid slot selected!" );
+			return;
 		}
+
+		ActiveWeaponSlot = slot;
+		var resource = InventorySlots[slot - 1];
+
+		// Destroy the previously equipped weapon
+		if ( _equippedWeaponObject != null && _equippedWeaponObject.IsValid )
+		{
+			_equippedWeaponObject.Destroy();
+			_equippedWeaponObject = null;
+		}
+
+		if ( resource == null )
+		{
+			Log.Info( $"No weapon in slot {slot}" );
+			return;
+		}
+
+		if ( resource.MainPrefab == null )
+		{
+			Log.Warning( $"Weapon {resource.Name} has no MainPrefab assigned" );
+			return;
+		}
+
+		// Instantiate the weapon prefab as a child of this player
+		_equippedWeaponObject = resource.MainPrefab.Clone( Transform.Position );
+		_equippedWeaponObject.SetParent( GameObject );
+
+		// Configure the Weapon component with the resource data
+		var weapon = _equippedWeaponObject.Components.Get<Weapon>();
+		if ( weapon != null )
+		{
+			weapon.Resource = resource;
+		}
+
+		Log.Info( $"Equipped weapon: {resource.Name} from slot {slot}" );
 	}
 
 	// Remove the desired item from the inventory
-	public void RemoveItem()
+	public void RemoveItem( int slot )
 	{
-		
+		if ( slot < 1 || slot > MaxSlots ) return;
+
+		var resource = InventorySlots[slot - 1];
+		if ( resource == null ) return;
+
+		InventorySlots[slot - 1] = null;
+
+		// If this was the active weapon, destroy it
+		if ( ActiveWeaponSlot == slot && _equippedWeaponObject != null && _equippedWeaponObject.IsValid )
+		{
+			_equippedWeaponObject.Destroy();
+			_equippedWeaponObject = null;
+		}
+
+		Log.Info( $"Removed {resource.Name} from slot {slot}" );
 	}
 
-	// Check if the inventory have a specific item
-	public void Hasitem()
+	// Check if the inventory has a specific item
+	public bool HasItem( WeaponResource resource )
 	{
-		// TODO + change to public bool
+		return InventorySlots != null && InventorySlots.Any( slot => slot != null && slot == resource );
 	}
 
-
-	// Drop the item from the inventory
-	[Broadcast] public void DropItem()
+	// Drop the currently equipped item
+	[Broadcast]
+	public void DropItem()
 	{
-		// TODO
+		if ( ActiveWeaponSlot < 1 || ActiveWeaponSlot > MaxSlots ) return;
+
+		var resource = InventorySlots[ActiveWeaponSlot - 1];
+		if ( resource == null ) return;
+
+		// Don't allow dropping slot 1 (hands)
+		if ( ActiveWeaponSlot == 1 ) return;
+
+		RemoveItem( ActiveWeaponSlot );
+		Log.Info( $"Dropped {resource.Name}" );
+	}
+
+	/// <summary>
+	/// Clears all weapons and destroys the equipped weapon object.
+	/// Called on death to clean up weapon state.
+	/// </summary>
+	public void ClearInventory()
+	{
+		if ( _equippedWeaponObject != null && _equippedWeaponObject.IsValid )
+		{
+			_equippedWeaponObject.Destroy();
+			_equippedWeaponObject = null;
+		}
+
+		if ( InventorySlots != null )
+		{
+			for ( int i = 0; i < InventorySlots.Length; i++ )
+			{
+				InventorySlots[i] = null;
+			}
+		}
 	}
 
 	private void CheckForInputs()
@@ -164,7 +247,7 @@ public partial class Player
 	}
 
 	private void PlayInventoryOpenSound()
-	{	
+	{
 		Sound.Play( "audio/select.sound" );
 	}
 
