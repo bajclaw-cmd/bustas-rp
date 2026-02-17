@@ -9,7 +9,7 @@ namespace GameSystems.Jobs
 		static JobProvider()
 		{
 			Log.Info( "Loading groups..." );
-			// Get all JobGroup resources
+			// Get all JobGroup resources from data files
 			foreach ( var group in ResourceLibrary.GetAll<JobGroupResource>( "data/jobs/groups" ) )
 			{
 				Log.Info( $"Loading group: {group.Name}" );
@@ -17,18 +17,31 @@ namespace GameSystems.Jobs
 			}
 
 			Log.Info( "Loading jobs..." );
-			// Get all Job resources
+			// Get all Job resources from data files
 			foreach ( var job in ResourceLibrary.GetAll<JobResource>( "data/jobs" ) )
 			{
 				Log.Info( $"Loading job: {job.Name}" );
 				Jobs[job.Name] = job;
 			}
+
+			// Register code-defined Bustas RP jobs (won't overwrite file-defined jobs)
+			foreach ( var job in BustasJobs.All )
+			{
+				if ( !Jobs.ContainsKey( job.Name ) )
+				{
+					Log.Info( $"Registering Bustas job: {job.Name}" );
+					Jobs[job.Name] = job;
+				}
+			}
+
+			Log.Info( $"Total jobs loaded: {Jobs.Count}" );
 		}
 
 		// Get default job when player spawns
 		public static JobResource GetDefault()
 		{
-			return ResourceLibrary.Get<JobResource>( "data/jobs/citizen.job" ); ;
+			return BustasJobs.GetDefault()
+				?? ResourceLibrary.Get<JobResource>( "data/jobs/citizen.job" );
 		}
 	}
 }

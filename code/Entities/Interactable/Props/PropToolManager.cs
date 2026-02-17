@@ -1,6 +1,7 @@
 using System;
 using Entity.Interactable.Props;
 using GameSystems.UI;
+using Sandbox.GameSystems;
 using Utils;
 
 namespace Sandbox.Entities.Interactable.Props
@@ -9,7 +10,7 @@ namespace Sandbox.Entities.Interactable.Props
 	{
 		[Property] public GameObject PropPrefab { get; set; }
 		[Property] public GameObject Screen { get; set; }
-		[Property] public int PropLimit { get; set; } = 10;
+		[Property] public int PropLimit { get; set; } = BustasConfig.MaxPropsPerPlayer;
 		[Property] public float SpawnProtectionTimeWindow { get; set; } = 1;
 		[Property] public bool UseCloudProps { get; set; } = true;
 		// List to store currently spawned props.

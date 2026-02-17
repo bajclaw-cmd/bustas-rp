@@ -1,6 +1,7 @@
 
 using GameSystems.UI;
 using Sandbox.Entity;
+using Sandbox.GameSystems;
 using Sandbox.GameSystems.Player;
 using Entity.Interactable.Door;
 using System;
@@ -21,7 +22,7 @@ namespace Entity.Interactable.Door
 		[Property, HostSync] public NetList<Player> DoorOwners {get; set;} = new();
 		[Property, HostSync] public NetList<Player> CanOwn {get; set;} = new();
 
-		[Property, HostSync] public int Price { get; set; } = 100;
+		[Property, HostSync] public int Price { get; set; } = BustasConfig.DoorPrice;
 
 		[Property] public DoorMenu DoorMenu {get; set;}
 		[HostSync] public string DoorTitle {get; set;} = "";

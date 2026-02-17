@@ -2,6 +2,7 @@ using System;
 using Entity.Interactable.Door;
 using GameSystems;
 using GameSystems.UI;
+using Sandbox.GameSystems;
 using Sandbox.GameSystems.Database;
 
 namespace Sandbox.GameSystems.Player
@@ -11,14 +12,14 @@ namespace Sandbox.GameSystems.Player
 	{
 		[Sync][Property, Group( "Status" )] public List<GameObject> Doors { get; private set; } = new();
 		[Sync][Property, Group("Status")]  public List<GameObject> CanOwnDoors { get; private set; } = new();
-		[Sync, HostSync][Property, Group( "Status" )] public float Balance { get; set; } = 500f;
+		[Sync, HostSync][Property, Group( "Status" )] public float Balance { get; set; } = BustasConfig.StartingMoney;
 		[Property, Group( "Status" )] public float Health { get; private set; } = 100f;
 		[Property, Group( "Status" )] public float Hunger { get; private set; } = 100f;
 		[Property, Group( "Status" )] public float MaxHealth { get; private set; } = 100f;
 		[Property, Group( "Status" )] public float HungerMax { get; private set; } = 100f;
 		[Property, Group( "Status" )] public bool Dead { get; private set; } = false;
 		[Property, Group( "Status" )] public bool Starving { get; private set; } = false;
-		[Property] private float _salaryTimerSeconds { get; set; } = 60f; // SalaryTimer in seconds
+		[Property] private float _salaryTimerSeconds { get; set; } = BustasConfig.SalaryInterval;
 		[Property] private float _starvingTimerSeconds { get; set; } = 20f;
 		private Chat _chat { get; set; }
 		private GameController _controller { get; set; }
@@ -103,6 +104,10 @@ namespace Sandbox.GameSystems.Player
 				}
 			}
 			Balance += Amount;
+			if ( Balance > BustasConfig.MaxWalletMoney )
+			{
+				Balance = BustasConfig.MaxWalletMoney;
+			}
 			return true;
 		}
 
