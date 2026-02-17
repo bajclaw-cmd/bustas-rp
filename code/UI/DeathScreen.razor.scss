@@ -1,0 +1,100 @@
+DeathScreen {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	pointer-events: none;
+	display: none;
+
+	&.open {
+		display: flex;
+		pointer-events: all;
+	}
+
+	.death-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(10, 0, 0, 0.85);
+		justify-content: center;
+		align-items: center;
+	}
+
+	.death-container {
+		flex-direction: column;
+		align-items: center;
+		gap: 15px;
+	}
+
+	.death-icon {
+		font-size: 80px;
+		color: #cc2222;
+		text-shadow: 0 0 30px rgba(200, 0, 0, 0.5);
+	}
+
+	.death-title {
+		font-size: 48px;
+		font-weight: bold;
+		color: #cc2222;
+		letter-spacing: 8px;
+		text-shadow: 0 0 20px rgba(200, 0, 0, 0.4);
+	}
+
+	.killer-info {
+		font-size: 18px;
+		color: #aaa;
+		margin-top: 10px;
+	}
+
+	.killer-name {
+		color: #ff4444;
+		font-weight: bold;
+	}
+
+	.respawn-timer {
+		font-size: 24px;
+		color: #888;
+		margin-top: 20px;
+	}
+
+	.respawn-ready {
+		margin-top: 20px;
+	}
+
+	.respawn-btn {
+		padding: 12px 40px;
+		background-color: #3d5afe;
+		border: none;
+		border-radius: 8px;
+		color: white;
+		font-size: 18px;
+		font-weight: bold;
+		cursor: pointer;
+		transition: background-color 0.15s;
+
+		&:hover {
+			background-color: #536dfe;
+		}
+	}
+
+	.nlr-warning {
+		margin-top: 30px;
+		padding: 10px 20px;
+		background-color: rgba(200, 150, 0, 0.2);
+		border: 1px solid rgba(200, 150, 0, 0.4);
+		border-radius: 6px;
+		color: #f0c040;
+		font-size: 13px;
+		flex-direction: row;
+		align-items: center;
+		gap: 8px;
+
+		.icon {
+			font-size: 18px;
+			color: #f0c040;
+		}
+	}
+}

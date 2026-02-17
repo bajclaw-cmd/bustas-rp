@@ -1,4 +1,4 @@
-﻿using GameSystems;
+using GameSystems;
 using GameSystems.UI;
 
 namespace Sandbox.GameSystems.Player;
@@ -11,10 +11,12 @@ public partial class Player : Component, Component.INetworkSpawn
 	[Property, Group( "References" )] public PlayerHUD PlayerHud { get; set; }
 	[Property, Group( "References" )] public PlayerHUD PlayerTabMenu { get; set; }
 	[Property, Group( "References" )] public LeaderBoard LeaderBoard { get; set; }
+	[Property, Group( "References" )] public MOTD MOTD { get; set; }
+	[Property, Group( "References" )] public DeathScreen DeathScreen { get; set; }
 	private CameraComponent _camera;
 
-	public string Name {get; set;} 
-	
+	public string Name {get; set;}
+
 	protected override void OnAwake()
 	{
 		_camera = Scene.GetAllComponents<CameraComponent>().FirstOrDefault( x => x.IsMainCamera );
@@ -25,6 +27,8 @@ public partial class Player : Component, Component.INetworkSpawn
 			PlayerHud.Enabled = true;
 			PlayerTabMenu.Enabled = true;
 			LeaderBoard.Enabled = true;
+			if ( MOTD != null ) MOTD.Enabled = true;
+			if ( DeathScreen != null ) DeathScreen.Enabled = true;
 		}
 	}
 
@@ -32,13 +36,16 @@ public partial class Player : Component, Component.INetworkSpawn
 	{
 		GameController.Instance.AddPlayer( GameObject, GameObject.Network.OwnerConnection);
 		Name = this.Network.OwnerConnection.DisplayName;
-		
+
 		OnStartMovement();
 
 		if ( !Network.IsProxy )
 		{
 			OnStartStatus();
 			OnStartInventory();
+
+			// Show MOTD on first spawn
+			MOTD?.ShowOnFirstSpawn();
 		}
 	}
 
@@ -57,6 +64,14 @@ public partial class Player : Component, Component.INetworkSpawn
 			OnFixedUpdateInventory();
 			OnFixedUpdateInteraction();
 		}
+	}
+
+	/// <summary>
+	/// Show the MOTD popup (called by /motd command).
+	/// </summary>
+	public void ShowMOTD()
+	{
+		MOTD?.Show();
 	}
 
 	public void OnNetworkSpawn( Connection owner )

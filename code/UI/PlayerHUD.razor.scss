@@ -8,8 +8,6 @@ PlayerHUD {
 		height: auto;
 		width: auto;
 		gap: 10px;
-		//margin: 0.5rem;
-		//justify-content: flex-end;
 		overflow-y: hidden;
 		display: flex;
 
@@ -17,13 +15,44 @@ PlayerHUD {
 			background-color: #1e1e27ba;
 			color: white;
 			text-shadow: 2px 2px 4px #000000;
-			padding: 10px;
+			padding: 10px 14px;
 			gap: 10px;
 			border-radius: 5px;
 			font-size: 13px;
 			width: auto;
 			align-self: flex-end;
 			flex-shrink: 0;
+			border-left: 3px solid #3273eb;
+			align-items: center;
+
+			&.notification--info {
+				border-left-color: #3273eb;
+				.icon { color: #3273eb; }
+			}
+			&.notification--warning {
+				border-left-color: #f0c040;
+				.icon { color: #f0c040; }
+			}
+			&.notification--error {
+				border-left-color: #e74c3c;
+				.icon { color: #e74c3c; }
+			}
+			&.notification--money {
+				border-left-color: #2ecc71;
+				.icon { color: #2ecc71; }
+			}
+			&.notification--death {
+				border-left-color: #e74c3c;
+				.icon { color: #e74c3c; }
+			}
+			&.notification--arrest {
+				border-left-color: #3498db;
+				.icon { color: #3498db; }
+			}
+			&.notification--vip {
+				border-left-color: #ffd700;
+				.icon { color: #ffd700; }
+			}
 		}
 	}
 
@@ -47,12 +76,45 @@ PlayerHUD {
 		text-shadow: 2px 2px 4px #000000;
 	}
 
+	// Wanted indicator
+	.wanted-indicator {
+		position: absolute;
+		top: 20px;
+		left: 50%;
+		transform: translateX(-50%);
+		flex-direction: row;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 20px;
+		background-color: rgba(200, 30, 30, 0.85);
+		border-radius: 6px;
+		border: 2px solid #ff4444;
+		box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+
+		.icon {
+			font-size: 22px;
+			color: #ff6666;
+		}
+
+		.wanted-text {
+			font-size: 18px;
+			font-weight: bold;
+			color: white;
+			text-shadow: 2px 2px 4px #000000;
+			letter-spacing: 2px;
+		}
+
+		.wanted-reason {
+			font-size: 13px;
+			color: #ffcccc;
+		}
+	}
+
 	.player-card {
 		position: absolute;
 		bottom: 25px;
 		left: 25px;
 		width: 400px;
-		// background-color: #1e1e27ba;
 		color: white;
 		text-shadow: 2px 2px 4px #000000;
 		flex-direction: column;
@@ -94,16 +156,34 @@ PlayerHUD {
 			.bar {
 				width: 100%;
 				height: 30px;
-				background-color: #ccc;
+				background-color: #333;
 				position: relative;
 				box-shadow: -1px -1px 30px 1px #000000;
-				margin-top: 10px;
-				
-				.bar-text {
-					font-size: 20px;
-					margin-left: 5px;
+				margin-top: 8px;
+				border-radius: 3px;
+				overflow: hidden;
+
+				.bar-icon {
+					position: absolute;
+					left: 4px;
+					top: 50%;
+					transform: translateY(-50%);
+					z-index: 1;
+
+					.icon {
+						font-size: 16px;
+						color: rgba(255, 255, 255, 0.8);
+					}
 				}
-				
+
+				.bar-text {
+					font-size: 14px;
+					margin-left: 24px;
+					line-height: 30px;
+					z-index: 1;
+					position: relative;
+				}
+
 			}
 		}
 
@@ -113,6 +193,7 @@ PlayerHUD {
 			position: absolute;
 			top: 0;
 			left: 0;
+			transition: width 0.3s ease-out;
 			&.fill--health {
 				background-color: rgb(180, 71, 71);
 			}
@@ -128,7 +209,6 @@ PlayerHUD {
 		top: -120px;
 		transition: top .2s ease-out, transform 2s ease-out;
 		transform-origin: center;
-		// background-color: red; // this is to debug the container
 
 		justify-content: center;
 		align-items: flex-start;
@@ -136,20 +216,18 @@ PlayerHUD {
 
 		&.visible {
 			top: 30px;
-			// transform: rotate(360deg); // This do be crazy spinning yo
 		}
 
 		.slot {
 			height: 90px;
 			width: 90px;
 			flex-direction: column;
-			//background-color: black; // this is to debug the container
 			background-color: #19191d5b;
 			border-radius: 5px 5px 5px 5px;
 			backdrop-filter: blur(1px);
 			color: rgba(255, 255, 255, 0.6);
 			transition: height 0.1s ease-out, width 0.1s ease-out, margin 0.1s ease-out;
-			
+
 			&.active {
 				color: white;
 				background: linear-gradient(90deg, rgba(51, 116, 255, 1) 0%, rgba(25, 25, 29, 0.357) 10%);
@@ -157,7 +235,7 @@ PlayerHUD {
 				width: 100px;
 				margin: -5px;
 			}
-			
+
 			.text {
 				font-size: 30px;
 				font-family: Poppins;

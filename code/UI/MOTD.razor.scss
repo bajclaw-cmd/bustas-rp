@@ -1,0 +1,141 @@
+MOTD {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	pointer-events: none;
+	display: none;
+
+	&.open {
+		display: flex;
+		pointer-events: all;
+	}
+
+	.motd-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.7);
+		justify-content: center;
+		align-items: center;
+	}
+
+	.motd-container {
+		width: 600px;
+		max-height: 80%;
+		background-color: #14141e;
+		border-radius: 12px;
+		border: 2px solid #2a2a3e;
+		flex-direction: column;
+		overflow: hidden;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+	}
+
+	.motd-header {
+		background-color: #1a1a2e;
+		padding: 20px 25px;
+		flex-direction: column;
+		align-items: center;
+		border-bottom: 2px solid #2a2a3e;
+	}
+
+	.motd-title {
+		font-size: 28px;
+		font-weight: bold;
+		color: #7B8CDE;
+		letter-spacing: 2px;
+	}
+
+	.motd-subtitle {
+		font-size: 14px;
+		color: #888;
+		margin-top: 4px;
+	}
+
+	.motd-body {
+		flex-direction: column;
+		padding: 20px 25px;
+		gap: 16px;
+		overflow-y: scroll;
+	}
+
+	.rule-section {
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.section-title {
+		font-size: 16px;
+		font-weight: bold;
+		color: #7B8CDE;
+		margin-bottom: 4px;
+		padding-bottom: 4px;
+		border-bottom: 1px solid #2a2a3e;
+	}
+
+	.rule {
+		font-size: 13px;
+		color: #c9c9c9;
+		padding: 4px 0;
+		line-height: 1.4;
+		flex-direction: row;
+		gap: 6px;
+	}
+
+	.rule-number {
+		color: #7B8CDE;
+		font-weight: bold;
+		flex-shrink: 0;
+		min-width: 20px;
+	}
+
+	.commands-grid {
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.command-item {
+		font-size: 12px;
+		color: #aaa;
+		background-color: #1e1e32;
+		padding: 6px 10px;
+		border-radius: 4px;
+		flex-direction: row;
+		gap: 6px;
+		align-items: center;
+	}
+
+	.cmd {
+		color: #2ECC71;
+		font-weight: bold;
+		font-family: monospace;
+	}
+
+	.motd-footer {
+		padding: 15px 25px;
+		background-color: #1a1a2e;
+		border-top: 2px solid #2a2a3e;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.dismiss-btn {
+		padding: 10px 30px;
+		background-color: #3d5afe;
+		border: none;
+		border-radius: 6px;
+		color: white;
+		font-size: 15px;
+		font-weight: bold;
+		cursor: pointer;
+		transition: background-color 0.15s;
+
+		&:hover {
+			background-color: #536dfe;
+		}
+	}
+}

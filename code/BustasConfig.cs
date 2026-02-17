@@ -79,5 +79,11 @@ namespace Sandbox.GameSystems
 		public const float WantedDuration = 300f; // seconds (5 min)
 		public const float WarrantDuration = 180f; // seconds (3 min)
 		public const int MaxActiveWarrants = 2;
+
+		// Death & Respawn
+		public const float RespawnDelay = 5f; // seconds before respawn allowed
+		public const float NLRDuration = 180f; // seconds (3 min)
+		public const float NLRRadius = 500f; // units - can't return within this radius of death
+		public const float RaidCooldown = 600f; // seconds (10 min)
 	}
 }

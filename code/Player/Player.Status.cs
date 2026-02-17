@@ -1,6 +1,7 @@
 using System;
 using Entity.Interactable.Door;
 using GameSystems;
+using GameSystems.Player;
 using GameSystems.UI;
 using Sandbox.GameSystems;
 using Sandbox.GameSystems.Database;
@@ -28,6 +29,10 @@ namespace Sandbox.GameSystems.Player
 		private TimeSince _lastUsedFood = 0;
 		//Pereodiocal player data save in seconds
 		private TimeSince _lastSaved = 0;
+
+		// NLR tracking
+		private bool _nlrWarningShown = false;
+		private TimeSince _lastNLRWarning = 0;
 
 		// TODO add a "/sellallowneddoors" command to sell all doors owned by the player
 
@@ -74,16 +79,71 @@ namespace Sandbox.GameSystems.Player
 			}
 			if ( Health < 1 || Hunger < 1 )
 			{
+				if ( !Dead )
+				{
+					OnDeath();
+				}
 				Dead = true;
 				Health = 0;
 				Hunger = 0;
 			}
 			if ( Health > MaxHealth ) { Health = MaxHealth; }
 			if ( Hunger > HungerMax ) { Hunger = HungerMax; }
-			if ( Dead )
+
+			// NLR violation check
+			if ( !Dead )
 			{
-				// TODO: Make ragdolls and die
+				var networkPlayer = GetNetworkPlayer();
+				if ( networkPlayer != null && NLRManager.IsViolatingNLR( networkPlayer.Connection.Id, GameObject.Transform.Position ) )
+				{
+					if ( _lastNLRWarning >= 5f )
+					{
+						SendMessage( "NLR VIOLATION - Leave this area! You cannot return to your death location." );
+						_lastNLRWarning = 0;
+					}
+				}
 			}
+		}
+
+		/// <summary>
+		/// Called when the player dies. Records NLR and shows death screen.
+		/// </summary>
+		private void OnDeath( string killerName = "" )
+		{
+			var networkPlayer = GetNetworkPlayer();
+			if ( networkPlayer != null )
+			{
+				// Record death position for NLR
+				NLRManager.RecordDeath( networkPlayer.Connection.Id, GameObject.Transform.Position );
+			}
+
+			// Show death screen
+			DeathScreen?.Show( killerName );
+
+			Log.Info( $"Player {networkPlayer?.Name ?? "Unknown"} has died." );
+		}
+
+		/// <summary>
+		/// Called from DeathScreen when player clicks Respawn.
+		/// </summary>
+		public void PerformRespawn()
+		{
+			Dead = false;
+			Health = MaxHealth;
+			Hunger = HungerMax;
+
+			// Find a spawn point and teleport there
+			var spawnPoints = Scene.GetAllComponents<SpawnPoint>().ToList();
+			if ( spawnPoints.Count > 0 )
+			{
+				var random = new Random();
+				var spawn = spawnPoints[random.Next( spawnPoints.Count )];
+				GameObject.Transform.Position = spawn.Transform.Position;
+				GameObject.Transform.Rotation = spawn.Transform.Rotation;
+			}
+
+			DeathScreen?.Hide();
+			_nlrWarningShown = false;
 		}
 
 		/// <summary>
@@ -129,6 +189,16 @@ namespace Sandbox.GameSystems.Player
 		public void SetHunger( float Amount )
 		{
 			Hunger = Amount;
+		}
+
+		public void SetHealth( float amount )
+		{
+			Health = amount;
+		}
+
+		public void SetMaxHealth( float amount )
+		{
+			MaxHealth = amount;
 		}
 
 		public void SellAllDoors()

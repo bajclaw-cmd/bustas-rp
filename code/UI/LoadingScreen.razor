@@ -1,0 +1,136 @@
+@namespace GameSystems.UI
+@using Sandbox;
+@using Sandbox.GameSystems;
+@using System.Threading.Tasks;
+@inherits PanelComponent
+
+<root class="@(_visible ? "open" : "")">
+	@if ( _visible )
+	{
+		<div class="loading-overlay">
+			<div class="loading-container">
+				<div class="loading-header">
+					<div class="server-name">@BustasConfig.ServerName</div>
+					<div class="server-tagline">Dark Roleplay Experience</div>
+				</div>
+
+				<div class="loading-info">
+					<div class="info-row">
+						<span class="info-label">Server</span>
+						<span class="info-value">@BustasConfig.ServerName</span>
+					</div>
+					<div class="info-row">
+						<span class="info-label">Max Players</span>
+						<span class="info-value">@BustasConfig.MaxPlayers</span>
+					</div>
+				</div>
+
+				<div class="loading-tip">
+					<i class="icon">lightbulb</i>
+					<span>@GetRandomTip()</span>
+				</div>
+
+				<div class="loading-bar-container">
+					<div class="loading-bar">
+						<div class="loading-fill" style="width: @(_loadingProgress)%;"></div>
+					</div>
+					<div class="loading-text">Loading...</div>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	private bool _visible = true;
+	private float _loadingProgress = 0f;
+	private int _currentTipIndex = 0;
+	private TimeSince _lastTipChange = 0;
+
+	private static readonly string[] LoadingTips = new[]
+	{
+		"No Random Deathmatch (RDM) - Always have a roleplay reason before engaging.",
+		"New Life Rule (NLR) lasts 3 minutes. Don't return to your death location!",
+		"Press F4 to open the job menu, buy printers, and spawn vehicles.",
+		"Mugging limit is $500. Give your victim time to comply before acting.",
+		"Police need a warrant to raid. Contact the Police Chief or Mayor.",
+		"The Mayor can set city laws using /addlaw. Check /laws regularly!",
+		"Use /911 to call the police in an emergency.",
+		"Post advertisements with /advert to promote your business.",
+		"Mechanics can repair damaged vehicles for a fee using /repair.",
+		"VIP members get extra doors, props, salary bonus, and exclusive jobs!",
+		"You must advert before raiding, mugging, or taking a hit.",
+		"Build a base to protect your money printers from raids.",
+		"Hobos can build on sidewalks, but no other job can!",
+		"Raid cooldown is 10 minutes. Plan your heists carefully.",
+		"Drop money with /dropmoney to pay other players.",
+		"Use TAB to view the scoreboard and see all online players."
+	};
+
+	/// <summary>
+	/// Show the loading screen.
+	/// </summary>
+	public void Show()
+	{
+		_visible = true;
+		_loadingProgress = 0f;
+	}
+
+	/// <summary>
+	/// Hide the loading screen.
+	/// </summary>
+	public void Hide()
+	{
+		_visible = false;
+	}
+
+	/// <summary>
+	/// Set loading progress (0-100).
+	/// </summary>
+	public void SetProgress( float progress )
+	{
+		_loadingProgress = Math.Clamp( progress, 0f, 100f );
+	}
+
+	private string GetRandomTip()
+	{
+		return LoadingTips[_currentTipIndex % LoadingTips.Length];
+	}
+
+	protected override void OnFixedUpdate()
+	{
+		if ( !_visible ) return;
+
+		// Cycle tips every 5 seconds
+		if ( _lastTipChange >= 5f )
+		{
+			_currentTipIndex++;
+			_lastTipChange = 0;
+		}
+
+		// Simulate loading progress
+		if ( _loadingProgress < 100f )
+		{
+			_loadingProgress += Time.Delta * 15f;
+			if ( _loadingProgress >= 100f )
+			{
+				_loadingProgress = 100f;
+				// Auto-hide after loading completes
+				_ = HideAfterDelay();
+			}
+		}
+	}
+
+	private async Task HideAfterDelay()
+	{
+		await Task.Delay( 500 );
+		_visible = false;
+	}
+
+	protected override int BuildHash() => System.HashCode.Combine(
+		_visible,
+		_loadingProgress.FloorToInt(),
+		_currentTipIndex
+	);
+}

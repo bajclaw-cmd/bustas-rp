@@ -1,0 +1,91 @@
+@namespace GameSystems.UI
+@using Sandbox;
+@using Sandbox.GameSystems;
+@inherits PanelComponent
+
+<root class="@(_visible ? "open" : "")">
+	@if ( _visible )
+	{
+		<div class="motd-overlay" onclick=@Close>
+			<div class="motd-container">
+				<div class="motd-header">
+					<span class="motd-title">@BustasConfig.ServerName</span>
+					<span class="motd-subtitle">Server Rules & Information</span>
+				</div>
+
+				<div class="motd-body">
+					<div class="rule-section">
+						<div class="section-title">General Rules</div>
+						<div class="rule"><span class="rule-number">1.</span> No Random Deathmatch (RDM) - Do not kill without a valid RP reason.</div>
+						<div class="rule"><span class="rule-number">2.</span> New Life Rule (NLR) - 3 minute cooldown. You cannot return to your death location or remember your past life.</div>
+						<div class="rule"><span class="rule-number">3.</span> Mug limit is $@(BustasConfig.MugMaxAmount.ToString("N0")). Victim must be given time to comply.</div>
+						<div class="rule"><span class="rule-number">4.</span> Raid cooldown is 10 minutes between raids on the same base.</div>
+					</div>
+
+					<div class="rule-section">
+						<div class="section-title">Roleplay Requirements</div>
+						<div class="rule"><span class="rule-number">5.</span> Must advert before: Raid, Mug, Hit, Kidnap, PD Raid.</div>
+						<div class="rule"><span class="rule-number">6.</span> Police must have a warrant to raid a player's base.</div>
+						<div class="rule"><span class="rule-number">7.</span> Mayor must set reasonable laws. No laws that target specific players.</div>
+					</div>
+
+					<div class="rule-section">
+						<div class="section-title">Building & Property</div>
+						<div class="rule"><span class="rule-number">8.</span> No prop abuse (climbing, surfing, killing, blocking).</div>
+						<div class="rule"><span class="rule-number">9.</span> Maximum @BustasConfig.MaxDoorsPerPlayer doors per player. One-way props and maze bases are not allowed.</div>
+						<div class="rule"><span class="rule-number">10.</span> Do not build on public sidewalks unless you are a Hobo.</div>
+					</div>
+
+					<div class="rule-section">
+						<div class="section-title">Useful Commands</div>
+						<div class="commands-grid">
+							<div class="command-item"><span class="cmd">/motd</span> Reopen this screen</div>
+							<div class="command-item"><span class="cmd">/laws</span> View current laws</div>
+							<div class="command-item"><span class="cmd">/dropmoney</span> Drop money</div>
+							<div class="command-item"><span class="cmd">/911</span> Call emergency</div>
+							<div class="command-item"><span class="cmd">/advert</span> Post an ad</div>
+							<div class="command-item"><span class="cmd">/hit</span> Place a hit</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="motd-footer">
+					<button class="dismiss-btn" onclick=@Close>
+						I Understand - Close
+					</button>
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	private bool _visible = false;
+	private bool _hasShownOnSpawn = false;
+
+	/// <summary>
+	/// Show the MOTD popup.
+	/// </summary>
+	public void Show()
+	{
+		_visible = true;
+	}
+
+	/// <summary>
+	/// Called on first spawn to show MOTD automatically.
+	/// </summary>
+	public void ShowOnFirstSpawn()
+	{
+		if ( _hasShownOnSpawn ) return;
+		_hasShownOnSpawn = true;
+		_visible = true;
+	}
+
+	private void Close()
+	{
+		_visible = false;
+	}
+
+	protected override int BuildHash() => System.HashCode.Combine( _visible );
+}

@@ -1,36 +1,55 @@
 @namespace GameSystems.UI
 @using global::GameSystems
+@using global::GameSystems.LawOrder
 @using Sandbox;
+@using Sandbox.GameSystems;
 @using Sandbox.GameSystems.Player;
 @inherits PanelComponent
 
 <root>
     @{
         Player stats = PlayerPrefab.Components.Get<Player>();
-        float health = stats.Health.Floor(); 
+        float health = stats.Health.Floor();
         float maxHealth = stats.MaxHealth.Floor();
         int healthPercentage = (health / maxHealth * 100).FloorToInt();
 
-        float food = stats.Hunger.Floor(); 
+        float food = stats.Hunger.Floor();
         float maxFood = stats.HungerMax.Floor();
         int foodPercentage = ((food / maxFood) * 100).FloorToInt();
+
+        var networkPlayer = stats.GetNetworkPlayer();
+        var jobName = networkPlayer?.Job?.Name ?? "Citizen";
+        var teamColor = networkPlayer?.Job?.TeamColor.Hex ?? "#ffffff";
+        var isWanted = networkPlayer != null && WantedManager.IsWanted( networkPlayer.Connection.Id );
+        var wantedReason = isWanted ? WantedManager.GetWantedReason( networkPlayer.Connection.Id ) : "";
     }
     <div class="key-instructions">@MyStringValue</div>
+
+    @if ( isWanted )
+    {
+        <div class="wanted-indicator">
+            <i class="icon">warning</i>
+            <span class="wanted-text">WANTED</span>
+            <span class="wanted-reason">@wantedReason</span>
+        </div>
+    }
 
     <div class="player-card">
         <div class="name">@Network.Owner.DisplayName.Truncate(13)</div>
         <div class="player-details-container">
-            <div class="money">$ @(stats.Balance.ToString("N0"))</div>
-            <div class="job"> @(GameController.Instance.GetMe().Job.Name) </div>
+            <div class="money">$@(stats.Balance.ToString("N0"))</div>
+            <div class="job" style="color: @teamColor">@jobName</div>
         </div>
         <div class="bars">
             <div class="bar">
                 <div class="fill fill--health" style="width:@(healthPercentage)%;"/>
-                <div class="bar-text">@(health.ToString("N0")) </div>
+                <div class="bar-icon"><i class="icon">favorite</i></div>
+                <div class="bar-text">@(health.ToString("N0")) / @(maxHealth.ToString("N0"))</div>
             </div>
             <div class="bar">
                 <div class="fill fill--food" style="width:@(foodPercentage)%;"/>
-                <div class="bar-text">@(food.ToString("N0"))</div>
+                <div class="bar-icon"><i class="icon">restaurant</i></div>
+                <div class="bar-text">@(food.ToString("N0")) / @(maxFood.ToString("N0"))</div>
             </div>
         </div>
     </div>
@@ -41,24 +60,40 @@
     <div class="notifications">
         @foreach (var notification in Notifications)
         {
-            <div class="notification">
+            <div class="notification notification--@notification.type.ToString().ToLower()">
                 @if (notification.type == NotificationType.Info)
                 {
-                    <i class="icon" style="color:#3273eb;">info</i>
+                    <i class="icon">info</i>
                 }
-                @if (notification.type == NotificationType.Warning)
+                else if (notification.type == NotificationType.Warning)
                 {
-                    <i class="icon" style="color: yellow">warning</i>
+                    <i class="icon">warning</i>
                 }
-                @if (notification.type == NotificationType.Error)
+                else if (notification.type == NotificationType.Error)
                 {
-                    <i class="icon" style="color:red">warning</i>
+                    <i class="icon">error</i>
+                }
+                else if (notification.type == NotificationType.Money)
+                {
+                    <i class="icon">attach_money</i>
+                }
+                else if (notification.type == NotificationType.Death)
+                {
+                    <i class="icon">skull</i>
+                }
+                else if (notification.type == NotificationType.Arrest)
+                {
+                    <i class="icon">gavel</i>
+                }
+                else if (notification.type == NotificationType.VIP)
+                {
+                    <i class="icon">star</i>
                 }
                 <div class="message">@notification.message</div>
             </div>
         }
     </div>
-    
+
     <div class="inventory @(PlayerPrefab.Components.Get<Player>().IsInventoryVisible ? "visible" : "")">
         @for (int i = 1; i <= Player.MaxSlots; i++)
         {
@@ -89,22 +124,28 @@
     {
         Info,
         Warning,
-        Error
+        Error,
+        Money,
+        Death,
+        Arrest,
+        VIP
     }
     record Notification(NotificationType type, string message, RealTimeSince timeSinceAdded);
     List<Notification> Notifications { get; set; } = new();
     public void Notify(NotificationType type, string message)
     {
-        // TODO play sound from here
         switch (type)
         {
             case NotificationType.Info:
                 Sound.Play("audio/select.sound");
                 break;
-            case NotificationType.Warning:
-                Sound.Play("audio/error.sound");
+            case NotificationType.Money:
+                Sound.Play("sounds/kenney/ui/ui.upvote.sound");
                 break;
-            case NotificationType.Error:
+            case NotificationType.VIP:
+                Sound.Play("sounds/kenney/ui/ui.upvote.sound");
+                break;
+            default:
                 Sound.Play("audio/error.sound");
                 break;
         }
@@ -113,7 +154,7 @@
 
     protected override void OnFixedUpdate()
     {
-        Notifications.RemoveAll(x => x.timeSinceAdded > 3);
+        Notifications.RemoveAll(x => x.timeSinceAdded > 5);
 
     }
 
@@ -123,14 +164,16 @@
     protected override int BuildHash()
     {
 	    var player = PlayerPrefab.Components.Get<Player>();
+	    var networkPlayer = player?.GetNetworkPlayer();
+	    var isWanted = networkPlayer != null && WantedManager.IsWanted( networkPlayer.Connection.Id );
 	    return System.HashCode.Combine( MyStringValue,
-		    GameController.Instance.GetMe().Job.Name,
+		    networkPlayer?.Job?.Name,
 		    player.Balance,
 		    player.Hunger,
 		    player.Health,
 		    player.IsInventoryVisible,
 		    player.CurrentSelectedSlot,
-		    Notifications.Count
+		    System.HashCode.Combine( Notifications.Count, isWanted )
 	    );
     }
 }

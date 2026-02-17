@@ -1,0 +1,109 @@
+@namespace GameSystems.UI
+@using Sandbox;
+@using Sandbox.GameSystems;
+@using Sandbox.GameSystems.Player;
+@inherits PanelComponent
+
+<root class="@(_visible ? "open" : "")">
+	@if ( _visible )
+	{
+		<div class="death-overlay">
+			<div class="death-container">
+				<i class="icon death-icon">skull</i>
+				<div class="death-title">YOU DIED</div>
+
+				@if ( !string.IsNullOrEmpty( _killerName ) )
+				{
+					<div class="killer-info">
+						Killed by <span class="killer-name">@_killerName</span>
+					</div>
+				}
+
+				@if ( _respawnTimer > 0 )
+				{
+					<div class="respawn-timer">
+						Respawn in @(_respawnTimer.ToString("F0"))s
+					</div>
+				}
+				else
+				{
+					<div class="respawn-ready">
+						<button class="respawn-btn" onclick=@Respawn>
+							Respawn
+						</button>
+					</div>
+				}
+
+				<div class="nlr-warning">
+					<i class="icon">warning</i>
+					NLR Active - Do not return to your death location for @(BustasConfig.NLRDuration / 60)min
+				</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	[Property] GameObject PlayerPrefab { get; set; }
+
+	private bool _visible = false;
+	private string _killerName = "";
+	private float _respawnTimer = 0;
+	private bool _canRespawn = false;
+
+	/// <summary>
+	/// Show the death screen with killer info.
+	/// </summary>
+	public void Show( string killerName = "" )
+	{
+		_visible = true;
+		_killerName = killerName;
+		_respawnTimer = BustasConfig.RespawnDelay;
+		_canRespawn = false;
+	}
+
+	/// <summary>
+	/// Hide the death screen.
+	/// </summary>
+	public void Hide()
+	{
+		_visible = false;
+		_killerName = "";
+		_respawnTimer = 0;
+		_canRespawn = false;
+	}
+
+	private void Respawn()
+	{
+		if ( !_canRespawn ) return;
+
+		var player = PlayerPrefab?.Components.Get<Player>();
+		if ( player == null ) return;
+
+		player.PerformRespawn();
+		Hide();
+	}
+
+	protected override void OnFixedUpdate()
+	{
+		if ( !_visible ) return;
+
+		if ( _respawnTimer > 0 )
+		{
+			_respawnTimer -= Time.Delta;
+			if ( _respawnTimer <= 0 )
+			{
+				_respawnTimer = 0;
+				_canRespawn = true;
+			}
+		}
+	}
+
+	protected override int BuildHash() => System.HashCode.Combine(
+		_visible,
+		_respawnTimer.FloorToInt(),
+		_canRespawn,
+		_killerName
+	);
+}
