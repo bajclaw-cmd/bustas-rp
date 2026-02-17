@@ -35,6 +35,12 @@ namespace Sandbox.Weapons.Default
 				return;
 			}
 			_camera = Scene.Camera;
+
+			// If Player reference isn't set (e.g. spawned via inventory), find it from parent
+			if ( Player == null )
+			{
+				Player = GameObject.Root.Components.Get<GameSystems.Player.Player>();
+			}
 		}
 
 		protected override void OnUpdate()

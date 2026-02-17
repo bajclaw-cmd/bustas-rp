@@ -14,6 +14,7 @@ public partial class Player : Component, Component.INetworkSpawn
 	[Property, Group( "References" )] public MOTD MOTD { get; set; }
 	[Property, Group( "References" )] public DeathScreen DeathScreen { get; set; }
 	[Property, Group( "References" )] public BasicMenu BasicMenu { get; set; }
+	[Property, Group( "References" )] public Phone Phone { get; set; }
 	private CameraComponent _camera;
 
 	public string Name {get; set;}
@@ -36,6 +37,7 @@ public partial class Player : Component, Component.INetworkSpawn
 			if ( MOTD != null ) MOTD.Enabled = true;
 			if ( DeathScreen != null ) DeathScreen.Enabled = true;
 			if ( BasicMenu != null ) BasicMenu.Enabled = true;
+			if ( Phone != null ) Phone.Enabled = true;
 		}
 	}
 

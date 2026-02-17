@@ -336,8 +336,9 @@
     [Property] GameObject VehiclePrefab { get; set; }
     [Property] Player Player { get; set; }
 
-    // Printer tracking
-    int CurrentPrinter = 0;
+    // Printer tracking - count active printers owned by this player
+    int CurrentPrinter => Scene.GetAllComponents<PrinterLogic>()
+        .Count( p => p.GameObject.Network.OwnerId == (Player?.Network?.OwnerId ?? Guid.Empty) );
 
     // Vehicle tracking
     int CurrentVehicleCount => VehicleManager.GetVehicleCount(Player?.Network?.OwnerId ?? Guid.Empty);
@@ -373,7 +374,6 @@
         printer.Components.Get<PrinterLogic>().SetPrinterType(type);
 
         printer.NetworkSpawn();
-        CurrentPrinter++;
     }
 
     [Property] public List<Model> Props { get; set; } = new List<Model>();

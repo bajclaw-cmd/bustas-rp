@@ -9,14 +9,16 @@
 
 <root>
     @{
-        Player stats = PlayerPrefab.Components.Get<Player>();
+        Player stats = PlayerPrefab?.Components.Get<Player>();
+        if ( stats == null ) { return; }
+
         float health = stats.Health.Floor();
         float maxHealth = stats.MaxHealth.Floor();
-        int healthPercentage = (health / maxHealth * 100).FloorToInt();
+        int healthPercentage = maxHealth > 0 ? (health / maxHealth * 100).FloorToInt() : 0;
 
         float food = stats.Hunger.Floor();
         float maxFood = stats.HungerMax.Floor();
-        int foodPercentage = ((food / maxFood) * 100).FloorToInt();
+        int foodPercentage = maxFood > 0 ? ((food / maxFood) * 100).FloorToInt() : 0;
 
         var networkPlayer = stats.GetNetworkPlayer();
         var jobName = networkPlayer?.Job?.Name ?? "Citizen";
@@ -95,19 +97,13 @@
         }
     </div>
 
-    <div class="inventory @(PlayerPrefab.Components.Get<Player>().IsInventoryVisible ? "visible" : "")">
+    <div class="inventory @(stats.IsInventoryVisible ? "visible" : "")">
         @for (int i = 1; i <= Player.MaxSlots; i++)
         {
+            var weapon = stats.InventorySlots != null ? stats.InventorySlots[i - 1] : null;
+            var thumbnail = weapon?.WorldModel != null ? $"{weapon.WorldModel.Name.ToLower().Replace(".vmdl", "")}.vmdl_c.png" : "";
 
-            // get the weapon from the inventory slot
-            var inventory = PlayerPrefab.Components.Get<Player>();
-            var weapon = inventory.InventorySlots[i - 1]; // arrays index start at 0
-
-
-            // Check if a weapon exist in this slot and assign an icon ( I need to use world model thumbnail instead of this )
-            var thumbnail = weapon != null ? $"{weapon.WorldModel.Name.ToLower().Replace(".vmdl", "")}.vmdl_c.png" : "";
-
-            <div class="slot @(i == PlayerPrefab.Components.Get<Player>().CurrentSelectedSlot ? "active" : "")">@i
+            <div class="slot @(i == stats.CurrentSelectedSlot ? "active" : "")">@i
                 <image src="@thumbnail" style="border-radius: 5px 5px 5px 5px;"></image>
             </div>
         }
@@ -185,8 +181,9 @@
     /// </summary>
     protected override int BuildHash()
     {
-	    var player = PlayerPrefab.Components.Get<Player>();
-	    var networkPlayer = player?.GetNetworkPlayer();
+	    var player = PlayerPrefab?.Components.Get<Player>();
+	    if ( player == null ) return 0;
+	    var networkPlayer = player.GetNetworkPlayer();
 	    var isWanted = networkPlayer != null && WantedManager.IsWanted( networkPlayer.Connection.Id );
 	    var weapon = GetActiveWeapon();
 	    return System.HashCode.Combine( MyStringValue,
