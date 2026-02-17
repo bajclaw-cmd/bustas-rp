@@ -38,7 +38,7 @@ public class BaseEntity : Component, IInteractable
 		SetupPhysics();
 
 		// Ensure the entity has the interact tag to be recognized by the InteractionSystem
-		GameObject.Tags.Add( "Interactable" );
+		GameObject.Tags.Add( "Interact" );
 	}
 
 	/// <summary>

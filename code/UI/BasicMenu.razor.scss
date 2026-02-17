@@ -1,5 +1,5 @@
 BasicMenu {
-	pointer-events: all;
+	pointer-events: none;
 	position: absolute;
 	top: 150;
 	left: 400;
@@ -12,6 +12,12 @@ BasicMenu {
 	font-family: 'Times New Roman', serif;
 	font-weight: 400;
 	border-radius: 5px;
+	display: none;
+
+	&.open {
+		display: flex;
+		pointer-events: all;
+	}
 
 	.main {
 		display: flex;

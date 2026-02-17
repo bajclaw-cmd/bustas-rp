@@ -48,21 +48,39 @@ namespace Sandbox.GameSystems.Player
 			_chat = Scene.Directory.FindByName( "Screen" )?.First()?.Components.Get<Chat>();
 			if ( _chat is null ) { Log.Error( "Chat component not found" ); }
 			_controller = GameController.Instance;
+
+			// Load saved money from persistence
+			if ( Networking.IsHost )
+			{
+				var steamId = Network.OwnerConnection?.SteamId ?? 0;
+				if ( steamId > 0 )
+				{
+					var saved = SavedPlayer.LoadSavedPlayer( steamId );
+					if ( saved != null )
+					{
+						Balance = saved.Money;
+						Log.Info( $"Loaded saved balance: ${saved.Money:N0} for {steamId}" );
+					}
+				}
+			}
 		}
 
 		private void OnFixedUpdateStatus()
 		{
-			if ( _lastUsed >= _salaryTimerSeconds && (Network.IsOwner) )
+			if ( _lastUsed >= _salaryTimerSeconds && (Networking.IsHost) )
 			{
 				var networkPlayer = GetNetworkPlayer();
-				float salary = networkPlayer.Job.Salary;
-				if ( networkPlayer.IsVIP )
+				if ( networkPlayer != null )
 				{
-					salary *= BustasConfig.VIPSalaryMultiplier;
+					float salary = networkPlayer.Job.Salary;
+					if ( networkPlayer.IsVIP )
+					{
+						salary *= BustasConfig.VIPSalaryMultiplier;
+					}
+					Balance += salary;
+					BroadcastSalarySound();
+					_lastUsed = 0;
 				}
-				Balance += salary;
-				Sound.Play( "sounds/kenney/ui/ui.upvote.sound" );
-				_lastUsed = 0;
 			}
 
 			if ( _lastSaved >= _saveCooldown && (Networking.IsHost) )
@@ -217,6 +235,13 @@ namespace Sandbox.GameSystems.Player
 		public void SetHunger( float Amount )
 		{
 			Hunger = Amount;
+		}
+
+		[Broadcast]
+		private void BroadcastSalarySound()
+		{
+			if ( !Network.IsOwner ) return;
+			Sound.Play( "audio/Notification.sound" );
 		}
 
 		public void SetHealth( float amount )

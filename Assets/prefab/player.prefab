@@ -400,7 +400,7 @@
                 },
                 {
                   "Id": 12,
-                  "Value": "Score",
+                  "Value": "SpawnMenu",
                   "DstId": 2,
                   "DstName": "action"
                 },
@@ -671,7 +671,7 @@
                 },
                 {
                   "Id": 6,
-                  "Value": "sounds/kenney/ui/ui.navigate.back.sound",
+                  "Value": "audio/select.sound",
                   "DstId": 1,
                   "DstName": "soundEvent"
                 },
@@ -771,7 +771,7 @@
                 },
                 {
                   "Id": 6,
-                  "Value": "sounds/kenney/ui/ui.navigate.forward.sound",
+                  "Value": "audio/select.sound",
                   "DstId": 1,
                   "DstName": "soundEvent"
                 },

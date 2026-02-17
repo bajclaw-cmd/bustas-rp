@@ -32,6 +32,12 @@ namespace Entity.Vehicle
 		public float HealthFraction => MaxHealth > 0 ? CurrentHealth / MaxHealth : 0f;
 
 		private VehicleConfig _config;
+		private GameObject _driverObject;
+		private float _currentSpeed;
+		private const float AccelerationRate = 300f;
+		private const float BrakeRate = 500f;
+		private const float FrictionRate = 150f;
+		private const float TurnSpeed = 80f;
 
 		protected override void OnStart()
 		{
@@ -134,6 +140,24 @@ namespace Entity.Vehicle
 		{
 			IsOccupied = true;
 			DriverConnectionId = connectionId;
+			_driverObject = player;
+
+			// Tell the player they're in a vehicle
+			var playerComp = player.Components.Get<Player>();
+			if ( playerComp != null )
+			{
+				playerComp.CurrentVehicle = GameObject;
+			}
+
+			// Hide the player model and disable their collider
+			var collider = player.Components.Get<Collider>();
+			if ( collider != null ) collider.Enabled = false;
+
+			// Parent player to vehicle so they move with it
+			player.SetParent( GameObject );
+			player.Transform.LocalPosition = Vector3.Up * 30f;
+
+			_currentSpeed = 0f;
 			Log.Info( $"Player entered {EntityName}" );
 		}
 
@@ -142,6 +166,24 @@ namespace Entity.Vehicle
 		{
 			IsOccupied = false;
 			DriverConnectionId = Guid.Empty;
+
+			// Unparent player and place them beside the vehicle
+			player.SetParent( null );
+			player.Transform.Position = GameObject.Transform.Position + GameObject.Transform.Rotation.Right * 80f + Vector3.Up * 10f;
+
+			// Tell the player they're no longer in a vehicle
+			var playerComp = player.Components.Get<Player>();
+			if ( playerComp != null )
+			{
+				playerComp.CurrentVehicle = null;
+			}
+
+			// Re-enable their collider
+			var collider = player.Components.Get<Collider>();
+			if ( collider != null ) collider.Enabled = true;
+
+			_driverObject = null;
+			_currentSpeed = 0f;
 			Log.Info( $"Player exited {EntityName}" );
 		}
 
@@ -150,6 +192,74 @@ namespace Entity.Vehicle
 		{
 			IsLocked = !IsLocked;
 			Log.Info( $"{EntityName} is now {(IsLocked ? "locked" : "unlocked")}" );
+		}
+
+		protected override void OnFixedUpdate()
+		{
+			base.OnFixedUpdate();
+
+			if ( !IsOccupied || _driverObject == null || IsDestroyed ) return;
+			if ( IsProxy ) return;
+
+			float maxSpeed = _config?.GetMaxSpeed() ?? BustasConfig.VehicleSpeedMedium;
+			float dt = Time.Delta;
+
+			// Get input from the driver
+			float forwardInput = 0f;
+			float turnInput = 0f;
+
+			if ( Input.Down( "Forward" ) ) forwardInput = 1f;
+			else if ( Input.Down( "Backward" ) ) forwardInput = -1f;
+
+			if ( Input.Down( "Left" ) ) turnInput = -1f;
+			else if ( Input.Down( "Right" ) ) turnInput = 1f;
+
+			// Brake if pressing opposite direction of travel
+			bool isBraking = (forwardInput < 0 && _currentSpeed > 10f) || (forwardInput > 0 && _currentSpeed < -10f);
+
+			if ( isBraking )
+			{
+				// Apply braking
+				float brakeAmount = BrakeRate * dt;
+				if ( _currentSpeed > 0 ) _currentSpeed = Math.Max( 0, _currentSpeed - brakeAmount );
+				else _currentSpeed = Math.Min( 0, _currentSpeed + brakeAmount );
+			}
+			else if ( forwardInput != 0 )
+			{
+				// Accelerate
+				_currentSpeed += forwardInput * AccelerationRate * dt;
+				_currentSpeed = Math.Clamp( _currentSpeed, -maxSpeed * 0.4f, maxSpeed );
+			}
+			else
+			{
+				// Apply friction when no input
+				float frictionAmount = FrictionRate * dt;
+				if ( _currentSpeed > 0 ) _currentSpeed = Math.Max( 0, _currentSpeed - frictionAmount );
+				else if ( _currentSpeed < 0 ) _currentSpeed = Math.Min( 0, _currentSpeed + frictionAmount );
+			}
+
+			// Steering (only when moving)
+			float speedFactor = Math.Abs( _currentSpeed ) / maxSpeed;
+			if ( speedFactor > 0.01f && turnInput != 0 )
+			{
+				float turnAmount = turnInput * TurnSpeed * Math.Min( speedFactor, 1f ) * dt;
+				// Reverse steering when going backwards
+				if ( _currentSpeed < 0 ) turnAmount = -turnAmount;
+				GameObject.Transform.Rotation *= Rotation.FromYaw( turnAmount );
+			}
+
+			// Move the vehicle
+			if ( Math.Abs( _currentSpeed ) > 1f )
+			{
+				var forward = GameObject.Transform.Rotation.Forward;
+				GameObject.Transform.Position += forward * _currentSpeed * dt;
+			}
+
+			// Exit vehicle with Use key
+			if ( Input.Pressed( "Use" ) && _driverObject != null )
+			{
+				ExitVehicle( _driverObject );
+			}
 		}
 
 		/// <summary>
@@ -208,7 +318,11 @@ namespace Entity.Vehicle
 			Log.Info( $"{EntityName} has been destroyed!" );
 
 			// Eject driver
-			if ( IsOccupied )
+			if ( IsOccupied && _driverObject != null )
+			{
+				ExitVehicle( _driverObject );
+			}
+			else if ( IsOccupied )
 			{
 				IsOccupied = false;
 				DriverConnectionId = Guid.Empty;

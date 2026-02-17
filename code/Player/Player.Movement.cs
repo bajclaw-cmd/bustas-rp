@@ -41,16 +41,27 @@ public partial class Player
 	{
 		if (!IsProxy)
 		{
+			// Allow mouse look even in vehicles
 			MouseInput();
-			Transform.Rotation = new Angles( 0, EyeAngles.yaw, 0 );
+			if ( CurrentVehicle == null )
+			{
+				Transform.Rotation = new Angles( 0, EyeAngles.yaw, 0 );
+			}
 		}
 
-		UpdateAnimation();
+		if ( CurrentVehicle == null )
+		{
+			UpdateAnimation();
+		}
 	}
 
 	protected void OnFixedUpdateMovement()
 	{
 		if ( IsProxy ) { return; }
+
+		// Skip normal movement when driving a vehicle
+		if ( CurrentVehicle != null ) { return; }
+
 		NoClipInput();
 		CrouchingInput();
 		MovementInput();

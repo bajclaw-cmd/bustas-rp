@@ -1,3 +1,4 @@
+@namespace GameSystems.UI
 @using System
 @using Sandbox;
 @using Sandbox.UI;
@@ -18,7 +19,8 @@
 
 @inherits PanelComponent;
 
-<root>
+<root class="@(IsMenuOpen ? "open" : "")">
+    @if ( !IsMenuOpen ) { return; }
     <div class="title">@BustasConfig.ServerName</div>
 
     <div class="main">
@@ -384,6 +386,8 @@
     [Property, TextArea] public string InfoCredits { get; set; } = "Credits for the team...";
     [Property] public List<String> Controls { get; set; }
 
+    public bool IsMenuOpen { get; set; } = false;
+
     protected override void OnStart()
     {
         try
@@ -397,6 +401,23 @@
         catch (Exception ex)
         {
             Log.Error($"Failed to initialize: {ex.Message}");
+        }
+    }
+
+    protected override void OnUpdate()
+    {
+        if ( Input.Pressed( "SpawnMenu" ) )
+        {
+            IsMenuOpen = !IsMenuOpen;
+            if ( IsMenuOpen )
+            {
+                Sound.Play( "audio/select.sound" );
+            }
+        }
+
+        if ( Input.EscapePressed && IsMenuOpen )
+        {
+            IsMenuOpen = false;
         }
     }
 
@@ -744,6 +765,7 @@
     }
 
     protected override int BuildHash() => System.HashCode.Combine(
+        IsMenuOpen,
         PropManager?.PropCount(),
         CurrentPrinter,
         CurrentVehicleCount,

@@ -220,7 +220,7 @@ namespace Sandbox.Weapons.Default
 				_heldBody.Sleeping = true;
 				Release();
 
-				Sound.Play( "audio/physiclock.sound" );
+				Sound.Play( "audio/PhysicLock.sound" );
 				Log.Info( "props is freeze" );
 			}
 		}
@@ -234,7 +234,7 @@ namespace Sandbox.Weapons.Default
 				//_heldBody.Velocity = 0;
 				//_heldBody.AngularVelocity = 0;
 
-				Sound.Play( "audio/physiclock.sound" );
+				Sound.Play( "audio/PhysicLock.sound" );
 				Log.Info( "props is unfreeze" );
 			}
 		}

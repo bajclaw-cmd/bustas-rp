@@ -28,9 +28,12 @@
 				<div class="addowner">
 					<div class="playerlistbox">Door Owners
 						<ul>
-							<li style="border-color: rgba(255, 255, 0, 0.227); border-width: 1px;">
-								@Door.DoorOwners[0].Name
-							</li>
+							@if (Door.DoorOwners.Count > 0)
+							{
+								<li style="border-color: rgba(255, 255, 0, 0.227); border-width: 1px;">
+									@Door.DoorOwners[0].Name
+								</li>
+							}
 						@foreach(Player player in Door.DoorOwners.Skip(1))
 						{
 							<li onclick=@(() => RemoveDoorOwner(player))>
@@ -138,7 +141,7 @@
 
 	void OnAddTitleButtonPressed()
 	{
-		if (Player == Door.DoorOwners[0]) addingTitle = true;
+		if (Door.DoorOwners.Count > 0 && Player == Door.DoorOwners[0]) addingTitle = true;
 	}
 
 	void ChangeDoorTitle()
@@ -150,7 +153,7 @@
 
 	void OnAddOwnerButtonPressed()
 	{
-		if (Player == Door.DoorOwners[0]) addingOwner = true;
+		if (Door.DoorOwners.Count > 0 && Player == Door.DoorOwners[0]) addingOwner = true;
 	}
 
 	void AddDoorOwner(NetworkPlayer player)

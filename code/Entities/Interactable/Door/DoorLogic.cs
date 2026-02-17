@@ -126,12 +126,14 @@ namespace Entity.Interactable.Door
 		[Authority]
 		public void SellDoor(Player player)
 		{
-			if (player == DoorOwners[0]) 
+			bool isPrimaryOwner = DoorOwners.Count > 0 && player == DoorOwners[0];
+
+			if ( isPrimaryOwner )
 			{
 				CanOwn.Clear();
 				ShowCanOwn(false);
 			}
-			
+
 			if (DoorOwners.Count == 1)
 			{
 				UnlockDoor();
@@ -139,10 +141,10 @@ namespace Entity.Interactable.Door
 				ShowIfOwner(false);
 			}
 
-			player.UpdateBalance(player == DoorOwners[0] ? Price / 4 / 2 : Price/2);
+			player.UpdateBalance(isPrimaryOwner ? Price / 4 / 2 : Price/2);
 			player.Doors.Remove(Door);
 			DoorOwners.Remove(player);
-	
+
 			using(Rpc.FilterInclude(c => c.Id == player.Network.OwnerId))
 			{
 				ShowIfOwner(false);
@@ -179,8 +181,9 @@ namespace Entity.Interactable.Door
 				ShowTextIfCanOwn = false;
 				return;
 			}
+			var primaryOwnerName = DoorOwners.Count > 0 ? DoorOwners[0].Name : "Unknown";
 			SellDoor(player);
-			player?.SendMessage( $"Your ownership of {DoorOwners[0].Name}'s door was revoked." );
+			player?.SendMessage( $"Your ownership of {primaryOwnerName}'s door was revoked." );
 		}
 
 		[Broadcast]

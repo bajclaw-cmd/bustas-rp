@@ -13,9 +13,15 @@ public partial class Player : Component, Component.INetworkSpawn
 	[Property, Group( "References" )] public LeaderBoard LeaderBoard { get; set; }
 	[Property, Group( "References" )] public MOTD MOTD { get; set; }
 	[Property, Group( "References" )] public DeathScreen DeathScreen { get; set; }
+	[Property, Group( "References" )] public BasicMenu BasicMenu { get; set; }
 	private CameraComponent _camera;
 
 	public string Name {get; set;}
+
+	/// <summary>
+	/// Reference to the vehicle the player is currently driving (null if not in a vehicle).
+	/// </summary>
+	public GameObject CurrentVehicle { get; set; }
 
 	protected override void OnAwake()
 	{
@@ -29,6 +35,7 @@ public partial class Player : Component, Component.INetworkSpawn
 			LeaderBoard.Enabled = true;
 			if ( MOTD != null ) MOTD.Enabled = true;
 			if ( DeathScreen != null ) DeathScreen.Enabled = true;
+			if ( BasicMenu != null ) BasicMenu.Enabled = true;
 		}
 	}
 
@@ -61,8 +68,13 @@ public partial class Player : Component, Component.INetworkSpawn
 		if ( !IsProxy )
 		{
 			OnFixedUpdateStatus();
-			OnFixedUpdateInventory();
-			OnFixedUpdateInteraction();
+
+			// Skip inventory and interaction when in a vehicle
+			if ( CurrentVehicle == null )
+			{
+				OnFixedUpdateInventory();
+				OnFixedUpdateInteraction();
+			}
 		}
 	}
 
