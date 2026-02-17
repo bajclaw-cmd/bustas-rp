@@ -1,0 +1,567 @@
+@namespace GameSystems.UI
+@using Sandbox;
+@using Sandbox.UI;
+@using System;
+@using global::GameSystems
+@using global::GameSystems.Phone
+@using Sandbox.GameSystems
+@using Sandbox.GameSystems.Player
+@inherits PanelComponent
+
+<root class="@(IsOpen ? "open" : "")">
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <span>@DateTime.Now.ToString("HH:mm")</span>
+                <span>@BustasConfig.ServerName</span>
+                <span class="battery">100%</span>
+            </div>
+
+            <!-- App Content -->
+            <div class="app-content">
+
+                <!-- Home Screen -->
+                @if (CurrentApp == PhoneApp.Home)
+                {
+                    <div class="home-screen">
+                        <div class="app-grid">
+                            <div class="app-icon" onclick="@(() => OpenApp(PhoneApp.Contacts))">
+                                <i class="icon">contacts</i>
+                                <span>Contacts</span>
+                            </div>
+                            <div class="app-icon" onclick="@(() => OpenApp(PhoneApp.Messages))">
+                                <i class="icon">chat</i>
+                                <span>Messages</span>
+                                @if (UnreadCount > 0)
+                                {
+                                    <div class="badge">@UnreadCount</div>
+                                }
+                            </div>
+                            <div class="app-icon emergency" onclick="@(() => OpenApp(PhoneApp.Emergency))">
+                                <i class="icon">emergency</i>
+                                <span>911</span>
+                            </div>
+                            <div class="app-icon" onclick="@(() => OpenApp(PhoneApp.Ads))">
+                                <i class="icon">campaign</i>
+                                <span>Ads</span>
+                            </div>
+                            <div class="app-icon" onclick="@(() => OpenApp(PhoneApp.GPS))">
+                                <i class="icon">map</i>
+                                <span>GPS</span>
+                            </div>
+                            <div class="app-icon" onclick="@(() => OpenApp(PhoneApp.Bank))">
+                                <i class="icon">account_balance</i>
+                                <span>Bank</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Contacts App -->
+                @if (CurrentApp == PhoneApp.Contacts)
+                {
+                    <div class="app-page">
+                        <div class="app-header">
+                            <button class="back-btn" onclick="@GoHome"><i class="icon">arrow_back</i></button>
+                            <span>Contacts</span>
+                        </div>
+                        <div class="app-body">
+                            @if (Contacts.Count == 0)
+                            {
+                                <div class="empty-state">No contacts yet. Look at a player and press C to add them.</div>
+                            }
+                            @foreach (var contact in Contacts)
+                            {
+                                <div class="contact-item">
+                                    <div class="contact-info">
+                                        <div class="contact-name">@contact.DisplayName</div>
+                                        <div class="contact-job">@contact.JobName</div>
+                                    </div>
+                                    <div class="contact-actions">
+                                        <button class="icon-btn" onclick="@(() => StartMessage(contact.SteamId, contact.DisplayName))">
+                                            <i class="icon">chat</i>
+                                        </button>
+                                        <button class="icon-btn delete" onclick="@(() => DeleteContact(contact.SteamId))">
+                                            <i class="icon">delete</i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Messages App -->
+                @if (CurrentApp == PhoneApp.Messages)
+                {
+                    <div class="app-page">
+                        <div class="app-header">
+                            <button class="back-btn" onclick="@(ActiveConversation > 0 ? () => { ActiveConversation = 0; } : GoHome)">
+                                <i class="icon">arrow_back</i>
+                            </button>
+                            <span>@(ActiveConversation > 0 ? ActiveConversationName : "Messages")</span>
+                        </div>
+                        <div class="app-body">
+                            @if (ActiveConversation == 0)
+                            {
+                                <!-- Conversation List -->
+                                @{
+                                    var partners = MessageManager.GetConversationPartners(MySteamId);
+                                }
+                                @if (partners.Count == 0)
+                                {
+                                    <div class="empty-state">No messages yet. Send one from Contacts.</div>
+                                }
+                                @foreach (var partnerId in partners)
+                                {
+                                    var contact = Contacts.FirstOrDefault(c => c.SteamId == partnerId);
+                                    var name = contact?.DisplayName ?? partnerId.ToString();
+                                    var convo = MessageManager.GetConversation(MySteamId, partnerId);
+                                    var lastMsg = convo.LastOrDefault();
+
+                                    <div class="contact-item" onclick="@(() => OpenConversation(partnerId, name))">
+                                        <div class="contact-info">
+                                            <div class="contact-name">@name</div>
+                                            <div class="contact-job">@(lastMsg?.Content.Truncate(30) ?? "")</div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <!-- Active Conversation -->
+                                <div class="message-list">
+                                    @{
+                                        var messages = MessageManager.GetConversation(MySteamId, ActiveConversation);
+                                    }
+                                    @foreach (var msg in messages)
+                                    {
+                                        var isMine = msg.SenderSteamId == MySteamId;
+                                        <div class="message-bubble @(isMine ? "sent" : "received")">
+                                            <div class="message-text">@msg.Content</div>
+                                            <div class="message-time">@msg.Timestamp.ToString("HH:mm")</div>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="message-input">
+                                    <TextEntry @ref="MessageInput" onsubmit="@SendTextMessage" style="flex-grow: 1;"></TextEntry>
+                                    <button class="send-btn" onclick="@SendTextMessage"><i class="icon">send</i></button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- 911 Emergency App -->
+                @if (CurrentApp == PhoneApp.Emergency)
+                {
+                    <div class="app-page">
+                        <div class="app-header">
+                            <button class="back-btn" onclick="@GoHome"><i class="icon">arrow_back</i></button>
+                            <span>Emergency</span>
+                        </div>
+                        <div class="app-body" style="justify-content: center; align-items: center;">
+                            <div class="emergency-panel">
+                                <i class="icon" style="font-size: 80px; color: #E74C3C;">emergency</i>
+                                <div style="font-size: 24px; color: white; margin-top: 10px;">Call 911</div>
+                                <div style="font-size: 14px; color: #888; margin-top: 5px;">Alert all police with your location</div>
+                                <button class="emergency-btn @(EmergencyOnCooldown ? "disabled" : "")" onclick="@Call911">
+                                    @(EmergencyOnCooldown ? $"Cooldown ({EmergencyCooldownRemaining:F0}s)" : "CALL 911")
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Ads App -->
+                @if (CurrentApp == PhoneApp.Ads)
+                {
+                    <div class="app-page">
+                        <div class="app-header">
+                            <button class="back-btn" onclick="@GoHome"><i class="icon">arrow_back</i></button>
+                            <span>Advertisements</span>
+                        </div>
+                        <div class="app-body">
+                            <div class="ad-compose">
+                                <div style="font-size: 14px; color: #888; margin-bottom: 5px;">Post an ad ($@(BustasConfig.AdvertCost:N0))</div>
+                                <TextEntry @ref="AdInput" style="width: 100%;" MaxLength=@(100)></TextEntry>
+                                <button class="ad-btn @(AdOnCooldown ? "disabled" : "")" onclick="@PostAd">
+                                    @(AdOnCooldown ? $"Cooldown ({AdCooldownRemaining:F0}s)" : "Post Ad")
+                                </button>
+                            </div>
+                            <div class="ad-list">
+                                @{
+                                    var ads = AdvertManager.GetRecentAds();
+                                }
+                                @foreach (var ad in ads)
+                                {
+                                    <div class="ad-item">
+                                        <div class="ad-author">@ad.AuthorName</div>
+                                        <div class="ad-message">@ad.Message</div>
+                                    </div>
+                                }
+                                @if (ads.Count == 0)
+                                {
+                                    <div class="empty-state">No recent ads.</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- GPS App -->
+                @if (CurrentApp == PhoneApp.GPS)
+                {
+                    <div class="app-page">
+                        <div class="app-header">
+                            <button class="back-btn" onclick="@GoHome"><i class="icon">arrow_back</i></button>
+                            <span>GPS</span>
+                        </div>
+                        <div class="app-body">
+                            <div class="gps-info">
+                                <div style="font-size: 14px; color: #888;">Your Position</div>
+                                <div style="font-size: 16px; color: white;">@(MyPosition.x.ToString("F0")), @(MyPosition.y.ToString("F0")), @(MyPosition.z.ToString("F0"))</div>
+                            </div>
+                            <div class="gps-players">
+                                <div style="font-size: 14px; color: #888; margin-bottom: 5px;">Nearby Players</div>
+                                @foreach (var nearby in NearbyPlayers)
+                                {
+                                    <div class="gps-player-item">
+                                        <div class="gps-blip" style="background-color: rgba(@(nearby.TeamColor.r * 255), @(nearby.TeamColor.g * 255), @(nearby.TeamColor.b * 255), 1);"></div>
+                                        <div class="gps-player-info">
+                                            <div class="contact-name">@nearby.Name</div>
+                                            <div class="contact-job">@(nearby.Distance.ToString("F0"))m away</div>
+                                        </div>
+                                    </div>
+                                }
+                                @if (NearbyPlayers.Count == 0)
+                                {
+                                    <div class="empty-state">No players nearby.</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Bank App -->
+                @if (CurrentApp == PhoneApp.Bank)
+                {
+                    <div class="app-page">
+                        <div class="app-header">
+                            <button class="back-btn" onclick="@GoHome"><i class="icon">arrow_back</i></button>
+                            <span>Bank</span>
+                        </div>
+                        <div class="app-body" style="align-items: center;">
+                            <div class="bank-panel">
+                                <i class="icon" style="font-size: 60px; color: #2ECC71;">account_balance</i>
+                                <div style="font-size: 14px; color: #888; margin-top: 10px;">Wallet Balance</div>
+                                <div style="font-size: 36px; color: #2ECC71; font-weight: bold;">$@(PlayerBalance.ToString("N0"))</div>
+                                <div style="font-size: 12px; color: #555; margin-top: 5px;">Job: @PlayerJob</div>
+                                <div style="font-size: 12px; color: #555;">Salary: $@(PlayerSalary.ToString("N0"))</div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</root>
+
+@code
+{
+    [Property] Player Player { get; set; }
+
+    bool IsOpen = false;
+    PhoneApp CurrentApp = PhoneApp.Home;
+    TextEntry MessageInput;
+    TextEntry AdInput;
+
+    // Conversation state
+    ulong ActiveConversation = 0;
+    string ActiveConversationName = "";
+
+    // Cached data
+    ulong MySteamId => Player?.Network?.OwnerConnection?.SteamId ?? 0;
+    List<ContactManager.Contact> Contacts = new();
+    int UnreadCount = 0;
+    Vector3 MyPosition = Vector3.Zero;
+    List<NearbyPlayerInfo> NearbyPlayers = new();
+    float PlayerBalance => Player?.Balance ?? 0;
+    string PlayerJob => GameController.Instance?.GetMe()?.Job?.Name ?? "None";
+    float PlayerSalary => GameController.Instance?.GetMe()?.Job?.Salary ?? 0;
+
+    // Cooldown state
+    bool EmergencyOnCooldown => EmergencyManager.IsOnCooldown(Player?.Network?.OwnerConnection?.Id ?? Guid.Empty);
+    float EmergencyCooldownRemaining => EmergencyManager.GetCooldownRemaining(Player?.Network?.OwnerConnection?.Id ?? Guid.Empty);
+    bool AdOnCooldown => AdvertManager.IsOnCooldown(Player?.Network?.OwnerConnection?.Id ?? Guid.Empty);
+    float AdCooldownRemaining => AdvertManager.GetCooldownRemaining(Player?.Network?.OwnerConnection?.Id ?? Guid.Empty);
+
+    // GPS update timer
+    RealTimeSince _lastGPSUpdate = 0;
+
+    public record NearbyPlayerInfo(string Name, float Distance, Color TeamColor);
+
+    public enum PhoneApp
+    {
+        Home, Contacts, Messages, Emergency, Ads, GPS, Bank
+    }
+
+    protected override void OnUpdate()
+    {
+        if (Player == null || Network.IsProxy) return;
+
+        // Toggle phone with P key
+        if (Input.Pressed("phone"))
+        {
+            IsOpen = !IsOpen;
+            if (IsOpen)
+            {
+                RefreshData();
+            }
+            else
+            {
+                CurrentApp = PhoneApp.Home;
+                ActiveConversation = 0;
+            }
+        }
+
+        // Close phone with Escape
+        if (IsOpen && Input.Pressed("menu"))
+        {
+            if (CurrentApp != PhoneApp.Home)
+            {
+                GoHome();
+            }
+            else
+            {
+                IsOpen = false;
+            }
+        }
+
+        // Add contact with C key (when phone is closed, looking at a player)
+        if (!IsOpen && Input.Pressed("addcontact"))
+        {
+            TryAddContactFromLook();
+        }
+
+        // Update GPS data periodically
+        if (IsOpen && CurrentApp == PhoneApp.GPS && _lastGPSUpdate >= BustasConfig.GPSUpdateInterval)
+        {
+            UpdateGPS();
+            _lastGPSUpdate = 0;
+        }
+
+        // Check for notifications
+        if (MySteamId > 0)
+        {
+            UnreadCount = MessageManager.GetNotificationCount(MySteamId);
+
+            // Show notification popup
+            var notifications = MessageManager.PopNotifications(MySteamId);
+            foreach (var notif in notifications)
+            {
+                Player?.SendMessage($"[SMS] {notif.SenderName}: {notif.Content}");
+            }
+        }
+    }
+
+    void RefreshData()
+    {
+        if (MySteamId > 0)
+        {
+            Contacts = ContactManager.GetContacts(MySteamId);
+        }
+        MyPosition = GameObject?.Parent?.Transform?.Position ?? Vector3.Zero;
+        if (CurrentApp == PhoneApp.GPS) UpdateGPS();
+    }
+
+    void GoHome()
+    {
+        CurrentApp = PhoneApp.Home;
+        ActiveConversation = 0;
+    }
+
+    void OpenApp(PhoneApp app)
+    {
+        CurrentApp = app;
+        RefreshData();
+        Sound.Play("audio/select.sound");
+    }
+
+    // ── Contacts ────────────────────────────────────────────────
+
+    void TryAddContactFromLook()
+    {
+        if (MySteamId == 0) return;
+
+        var camera = Scene.GetAllComponents<CameraComponent>().FirstOrDefault(x => x.IsMainCamera);
+        if (camera == null) return;
+
+        var start = camera.Transform.Position;
+        var direction = camera.Transform.World.Forward;
+        var end = start + direction * 200f;
+        var tr = Scene.Trace.IgnoreGameObject(GameObject.Parent).Ray(start, end).Run();
+
+        if (tr.GameObject == null) return;
+
+        // Check if we hit a player
+        var targetPlayer = tr.GameObject.Components.Get<Player>();
+        if (targetPlayer == null)
+        {
+            // Try parent (player model might be a child)
+            targetPlayer = tr.GameObject.Parent?.Components.Get<Player>();
+        }
+        if (targetPlayer == null) return;
+
+        var targetConnection = targetPlayer.Network.OwnerConnection;
+        if (targetConnection == null) return;
+
+        var networkPlayer = GameController.Instance?.GetPlayerByConnectionId(targetConnection.Id);
+        var jobName = networkPlayer?.Job?.Name ?? "Unknown";
+
+        if (ContactManager.AddContact(MySteamId, targetConnection.SteamId, targetConnection.DisplayName, jobName))
+        {
+            Player?.SendMessage($"Added {targetConnection.DisplayName} to contacts.");
+            Contacts = ContactManager.GetContacts(MySteamId);
+        }
+        else
+        {
+            Player?.SendMessage($"{targetConnection.DisplayName} is already in your contacts.");
+        }
+    }
+
+    void DeleteContact(ulong steamId)
+    {
+        ContactManager.RemoveContact(MySteamId, steamId);
+        Contacts = ContactManager.GetContacts(MySteamId);
+    }
+
+    // ── Messages ────────────────────────────────────────────────
+
+    void StartMessage(ulong steamId, string name)
+    {
+        CurrentApp = PhoneApp.Messages;
+        ActiveConversation = steamId;
+        ActiveConversationName = name;
+    }
+
+    void OpenConversation(ulong steamId, string name)
+    {
+        ActiveConversation = steamId;
+        ActiveConversationName = name;
+    }
+
+    void SendTextMessage()
+    {
+        if (MessageInput == null || ActiveConversation == 0) return;
+
+        var text = MessageInput.Text;
+        MessageInput.Text = "";
+
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        var myName = Player?.Network?.OwnerConnection?.DisplayName ?? "Unknown";
+        MessageManager.SendMessage(MySteamId, myName, ActiveConversation, text);
+    }
+
+    // ── 911 ─────────────────────────────────────────────────────
+
+    [Broadcast]
+    void Call911()
+    {
+        if (Player == null) return;
+
+        var connectionId = Player.Network.OwnerConnection?.Id ?? Guid.Empty;
+        var callerName = Player.Network.OwnerConnection?.DisplayName ?? "Unknown";
+        var position = GameObject.Parent?.Transform?.Position ?? Vector3.Zero;
+
+        if (!EmergencyManager.Call911(connectionId, callerName, position))
+        {
+            Player.SendMessage("911 is on cooldown. Please wait.");
+            return;
+        }
+
+        Player.SendMessage("911 call placed. Police have been alerted.");
+
+        // Notify all government players
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        foreach (var p in gc.GetAllPlayers())
+        {
+            if (p.Value.Job?.IsGovernment == true)
+            {
+                p.Value.GameObject.Components.Get<Player>()?.SendMessage(
+                    $"[911] Emergency call from {callerName} at ({position.x:F0}, {position.y:F0}, {position.z:F0})!"
+                );
+            }
+        }
+    }
+
+    // ── Ads ──────────────────────────────────────────────────────
+
+    void PostAd()
+    {
+        if (Player == null || AdInput == null) return;
+
+        var text = AdInput.Text;
+        AdInput.Text = "";
+
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        var connectionId = Player.Network.OwnerConnection?.Id ?? Guid.Empty;
+        var authorName = Player.Network.OwnerConnection?.DisplayName ?? "Unknown";
+
+        if (!Player.UpdateBalance(-BustasConfig.AdvertCost))
+        {
+            Player.SendMessage($"You need ${BustasConfig.AdvertCost:N0} to post an ad.");
+            return;
+        }
+
+        if (!AdvertManager.PostAd(connectionId, authorName, text))
+        {
+            Player.UpdateBalance(BustasConfig.AdvertCost); // Refund
+            Player.SendMessage("Ad on cooldown. Please wait.");
+            return;
+        }
+
+        BroadcastAd(authorName, text);
+    }
+
+    [Broadcast]
+    void BroadcastAd(string author, string message)
+    {
+        var chat = Scene.Directory.FindByName("Screen")?.First()?.Components.Get<GameSystems.UI.Chat>();
+        chat?.NewSystemMessage($"[AD] {author}: {message}");
+    }
+
+    // ── GPS ──────────────────────────────────────────────────────
+
+    void UpdateGPS()
+    {
+        MyPosition = GameObject?.Parent?.Transform?.Position ?? Vector3.Zero;
+        NearbyPlayers.Clear();
+
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        foreach (var p in gc.GetAllPlayers())
+        {
+            if (p.Value.Connection.Id == (Player?.Network?.OwnerConnection?.Id ?? Guid.Empty)) continue;
+
+            var pos = p.Value.GameObject?.Transform?.Position ?? Vector3.Zero;
+            var dist = Vector3.DistanceBetween(MyPosition, pos);
+
+            if (dist <= BustasConfig.GPSRange)
+            {
+                var teamColor = p.Value.Job?.TeamColor ?? Color.White;
+                NearbyPlayers.Add(new NearbyPlayerInfo(p.Value.Name, dist, teamColor));
+            }
+        }
+
+        NearbyPlayers.Sort((a, b) => a.Distance.CompareTo(b.Distance));
+    }
+
+    protected override int BuildHash() => System.HashCode.Combine(IsOpen, CurrentApp, ActiveConversation, UnreadCount, PlayerBalance);
+}

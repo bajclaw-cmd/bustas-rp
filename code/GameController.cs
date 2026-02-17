@@ -3,6 +3,7 @@ using GameSystems.Jobs;
 using Entity.Vehicle;
 using GameSystems.CriminalEconomy;
 using GameSystems.LawOrder;
+using GameSystems.Phone;
 using GameSystems.Player;
 using GameSystems.UI;
 using Sandbox.GameSystems.Database;
@@ -131,6 +132,12 @@ namespace GameSystems
 
 				// Destroy all vehicles owned by this player
 				VehicleManager.DestroyAllVehicles( connection.Id );
+
+				// Clean up phone/communication state
+				ContactManager.ClearCache( connection.SteamId );
+				MessageManager.ClearPlayer( connection.SteamId );
+				EmergencyManager.ClearPlayer( connection.Id );
+				AdvertManager.ClearPlayer( connection.Id );
 
 				// Perform clean up functions
 				var playerStats = player.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>();

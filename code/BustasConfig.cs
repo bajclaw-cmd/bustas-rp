@@ -65,6 +65,14 @@ namespace Sandbox.GameSystems
 		public const float VehicleDamageWeaponMultiplier = 1.0f;
 		public const float VehicleDamageExplosionMultiplier = 3.0f;
 
+		// Phone & Communication
+		public const float EmergencyCooldown = 60f; // seconds
+		public const float AdvertCost = 100f;
+		public const float AdvertCooldown = 30f; // seconds
+		public const int MaxMessageHistory = 50;
+		public const float GPSUpdateInterval = 2f; // seconds
+		public const float GPSRange = 2000f; // units
+
 		// Law & Order
 		public const int MaxLaws = 10;
 		public const int MaxLawLength = 100;

@@ -2,6 +2,7 @@ using System;
 using Entity.Vehicle;
 using GameSystems.CriminalEconomy;
 using GameSystems.LawOrder;
+using GameSystems.Phone;
 using GameSystems.Player;
 using GameSystems.UI;
 using Sandbox.GameSystems.Config;
@@ -782,6 +783,100 @@ namespace GameSystems.Config
 
 								playerStats.SendMessage($"Vehicle repaired! You earned ${repairCost:N0}.");
 								ownerStats.SendMessage($"Your {vehicleLogic.EntityName} was repaired for ${repairCost:N0}.");
+								return true;
+						}
+				)},
+				// ── Phone & Communication Commands ────────────────────────
+				{ "advert", new Command(
+						name: "advert",
+						description: "Post an advertisement. Usage: /advert <message>",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								if (networkPlayer == null) return false;
+
+								if (args.Length < 1)
+								{
+									playerStats.SendMessage("Usage: /advert <message>");
+									return false;
+								}
+
+								var connectionId = networkPlayer.Connection.Id;
+
+								// Check cooldown
+								if (AdvertManager.IsOnCooldown(connectionId))
+								{
+									float remaining = AdvertManager.GetCooldownRemaining(connectionId);
+									playerStats.SendMessage($"Ad on cooldown. {remaining:F0}s remaining.");
+									return false;
+								}
+
+								// Check cost
+								if (!playerStats.UpdateBalance(-Sandbox.GameSystems.BustasConfig.AdvertCost))
+								{
+									playerStats.SendMessage($"You need ${Sandbox.GameSystems.BustasConfig.AdvertCost:N0} to post an ad.");
+									return false;
+								}
+
+								string adText = string.Join(" ", args);
+								if (!AdvertManager.PostAd(connectionId, networkPlayer.Name, adText))
+								{
+									playerStats.UpdateBalance(Sandbox.GameSystems.BustasConfig.AdvertCost); // Refund
+									playerStats.SendMessage("Failed to post ad.");
+									return false;
+								}
+
+								// Broadcast to all players via chat
+								var chat = scene.Directory.FindByName("Screen")?.First()?.Components.Get<Chat>();
+								chat?.NewSystemMessage($"[AD] {networkPlayer.Name}: {adText}");
+
+								playerStats.SendMessage($"Ad posted for ${Sandbox.GameSystems.BustasConfig.AdvertCost:N0}.");
+								return true;
+						}
+				)},
+				{ "911", new Command(
+						name: "911",
+						description: "Call 911 to alert police. Usage: /911",
+						permissionLevel: PermissionLevel.User,
+						commandFunction: (player, scene, args) =>
+						{
+								var playerStats = player.Components.Get<Sandbox.GameSystems.Player.Player>();
+								if (playerStats == null) return false;
+
+								var networkPlayer = playerStats.GetNetworkPlayer();
+								if (networkPlayer == null) return false;
+
+								var connectionId = networkPlayer.Connection.Id;
+								var position = player.Transform.Position;
+
+								if (!EmergencyManager.Call911(connectionId, networkPlayer.Name, position))
+								{
+									float remaining = EmergencyManager.GetCooldownRemaining(connectionId);
+									playerStats.SendMessage($"911 on cooldown. {remaining:F0}s remaining.");
+									return false;
+								}
+
+								playerStats.SendMessage("911 call placed. Police have been alerted.");
+
+								// Notify all government players
+								var gameController = GameSystems.GameController.Instance;
+								if (gameController != null)
+								{
+									foreach (var p in gameController.GetAllPlayers())
+									{
+										if (p.Value.Job?.IsGovernment == true)
+										{
+											p.Value.GameObject.Components.Get<Sandbox.GameSystems.Player.Player>()?.SendMessage(
+												$"[911] Emergency call from {networkPlayer.Name} at ({position.x:F0}, {position.y:F0}, {position.z:F0})!"
+											);
+										}
+									}
+								}
+
 								return true;
 						}
 				)}
