@@ -176,35 +176,35 @@
           "__guid": "a1a1a1a1-1111-4111-b111-111111111111",
           "Flags": 0,
           "Name": "Spawn 1",
-          "Position": "0,-200,-260",
+          "Position": "0,0,40",
           "Enabled": true
         },
         {
           "__guid": "a2a2a2a2-2222-4222-b222-222222222222",
           "Flags": 0,
           "Name": "Spawn 2",
-          "Position": "350,-1200,-260",
+          "Position": "200,200,40",
           "Enabled": true
         },
         {
           "__guid": "a3a3a3a3-3333-4333-b333-333333333333",
           "Flags": 0,
           "Name": "Spawn 3",
-          "Position": "-300,250,-260",
+          "Position": "-200,200,40",
           "Enabled": true
         },
         {
           "__guid": "a4a4a4a4-4444-4444-b444-444444444444",
           "Flags": 0,
           "Name": "Spawn 4",
-          "Position": "1800,900,-260",
+          "Position": "200,-200,40",
           "Enabled": true
         },
         {
           "__guid": "a5a5a5a5-5555-4555-b555-555555555555",
           "Flags": 0,
           "Name": "Spawn 5",
-          "Position": "2600,-500,-256",
+          "Position": "-200,-200,40",
           "Enabled": true
         }
       ]
@@ -260,7 +260,7 @@
           "__guid": "abfa78b9-4827-4e87-821e-abf6307fffe3",
           "__version": 1,
           "EnableCollision": true,
-          "MapName": "map/downtownv2/rp_downtown_v2.vmap",
+          "MapName": "facepunch.flatgrass",
           "NoOrigin": false,
           "OnMapLoaded": null,
           "OnMapUnloaded": null,
