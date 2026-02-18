@@ -48,15 +48,16 @@ namespace GameSystems
 
 		public GameController()
 		{
-			if ( _instance != null )
-			{
-				Log.Warning( "Only one instance of GameController is allowed." );
-			}
-
 			_instance = this;
 		}
 
 		public static GameController Instance => _instance;
+
+		protected override void OnDestroy()
+		{
+			if ( _instance == this )
+				_instance = null;
+		}
 
 		protected override void OnStart()
 		{

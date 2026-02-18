@@ -21,15 +21,20 @@
 
 <root class="@(IsMenuOpen ? "open" : "")">
     @if ( !IsMenuOpen ) { return; }
+    @if ( Player == null ) { return; }
+    @{
+        var me = GameController.Instance?.GetMe();
+        var myJob = me?.Job;
+    }
     <div class="title">@BustasConfig.ServerName</div>
 
     <div class="main">
         <div class="side-bar">
             <div class="player-container">
-                <div class="name">@(Network.Owner.DisplayName.Truncate(13))</div>
+                <div class="name">@(Network.Owner?.DisplayName?.Truncate(13) ?? "Player")</div>
                 <div class="wallet">$@(Player.Balance.ToString("N0"))</div>
-                <div class="sub">Salary:<span>$@(GameController.Instance.GetMe().Job.Salary.ToString("N0"))</span></div>
-                <div class="sub">Job:<span>@(GameController.Instance.GetMe().Job.Name)</span></div>
+                <div class="sub">Salary:<span>$@(myJob?.Salary.ToString("N0") ?? "0")</span></div>
+                <div class="sub">Job:<span>@(myJob?.Name ?? "Citizen")</span></div>
             </div>
             <div class="navigation">
                 <div class="buttoncontainer">

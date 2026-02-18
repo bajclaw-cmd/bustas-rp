@@ -10,13 +10,15 @@ public sealed class ConfigManager : Component
 	[Sync] public CommandConfig Commands { get; } = new();
 	public ConfigManager()
 	{
-		if ( _instance != null )
-		{
-			Log.Warning( "Only one instance of ConfigManager is allowed." );
-		}
 		_instance = this;
 	}
 	public static ConfigManager Instance => _instance;
+
+	protected override void OnDestroy()
+	{
+		if ( _instance == this )
+			_instance = null;
+	}
 
 	protected override void OnStart()
 	{

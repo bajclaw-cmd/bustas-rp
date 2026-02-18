@@ -11,7 +11,7 @@
 @inherits PanelComponent
 
 <root class="@(_showLeaderboard ? "open" : "")">
-	@if ( _showLeaderboard )
+	@if ( _showLeaderboard && GameController.Instance != null )
 	{
 		<div class="scoreboard-container" onclick=@CloseContextMenu>
 			<div class="scoreboard-header">
@@ -47,7 +47,7 @@
 								<span class="vip-tag">VIP</span>
 							}
 						</div>
-						<div class="col col-job">@p.Job.Name</div>
+						<div class="col col-job">@(p.Job?.Name ?? "Citizen")</div>
 						<div class="col col-money">$@(p.GameObject.Components.Get<Player>()?.Balance.ToString("N0") ?? "0")</div>
 						<div class="col col-rank" style="color: @rowColor">@group.DisplayName</div>
 						<div class="col col-ping">@GetPing( p )ms</div>

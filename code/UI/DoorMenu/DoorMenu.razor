@@ -8,6 +8,7 @@
 @inherits PanelComponent
 
 <root>
+	@if (Door == null) { return; }
 	@if (addingTitle)
 	{
 		<div class="titlebox">
@@ -209,5 +210,5 @@
 	/// <summary>
 	/// the hash determines if the system should be rebuilt. If it changes, it will be rebuilt
 	/// </summary>
-	protected override int BuildHash() => System.HashCode.Combine( addingTitle, Door.DoorOwners.Count, Door.CanOwn.Count, Door.IsUnlocked);
+	protected override int BuildHash() => System.HashCode.Combine( addingTitle, Door?.DoorOwners?.Count, Door?.CanOwn?.Count, Door?.IsUnlocked);
 }

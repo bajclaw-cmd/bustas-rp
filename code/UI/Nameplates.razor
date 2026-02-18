@@ -6,6 +6,7 @@
 @inherits PanelComponent
 
 <root>
+    @if ( Name == null ) { return; }
     <div class="name">@Name.Truncate(13)</div>
     @if (IsWanted && IsViewerGovernment)
     {

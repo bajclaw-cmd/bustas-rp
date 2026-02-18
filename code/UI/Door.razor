@@ -6,9 +6,10 @@
 
 
 <root class="root">
-  @if (!door.IsOwnable) return;
+  @if (door == null) { return; }
+  @if (!door.IsOwnable) { return; }
 
-    @if (door != null && !door.IsDoorOwned())
+    @if (!door.IsDoorOwned())
     {
       <div class="container">
         <div class="title">For Sale</div>
@@ -54,40 +55,6 @@
     }
 </root>
 
-<style>
-  .root {
-    text-align: center;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Times New Roman', serif;
-    font-weight: 600;
-    color: #c9c9c9;
-    width: 100%;
-    gap: 5px;
-  }
-
-  .container {
-    background-color: #1e1e27e5;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-  }
-
-  .title-container {
-    margin-bottom:15px;
-  }
-
-  .title {
-    font-size: 35px;
-  }
-
-  .sub-title {
-    font-size: 20px;
-  }
-</style>
 @code
 {
   DoorLogic door { get; set; }
@@ -95,8 +62,7 @@
 
   protected override void OnStart()
   {
-    door = DoorPrefab.Components.Get<DoorLogic>();
-    Log.Info(door);
+    door = DoorPrefab?.Components.Get<DoorLogic>();
   }
 
 
