@@ -38,6 +38,8 @@ public partial class Player : Component, Component.INetworkSpawn
 			if ( DeathScreen != null ) DeathScreen.Enabled = true;
 			if ( BasicMenu != null ) BasicMenu.Enabled = true;
 			if ( Phone != null ) Phone.Enabled = true;
+
+			Log.Info( $"[Player] UI enabled - BasicMenu: {BasicMenu != null}, LeaderBoard: {LeaderBoard != null}, Phone: {Phone != null}" );
 		}
 	}
 

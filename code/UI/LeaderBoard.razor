@@ -107,7 +107,12 @@
 	protected override void OnUpdate()
 	{
 		var wasShowing = _showLeaderboard;
-		_showLeaderboard = Input.Down( "menu" );
+		_showLeaderboard = Input.Down( "Score" );
+
+		if ( !wasShowing && _showLeaderboard )
+		{
+			Log.Info( "[LeaderBoard] Tab pressed. Showing scoreboard." );
+		}
 
 		if ( wasShowing && !_showLeaderboard )
 		{

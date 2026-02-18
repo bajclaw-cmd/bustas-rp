@@ -414,6 +414,7 @@
         if ( Input.Pressed( "SpawnMenu" ) )
         {
             IsMenuOpen = !IsMenuOpen;
+            Log.Info( $"[BasicMenu] F4 pressed. IsMenuOpen = {IsMenuOpen}" );
             if ( IsMenuOpen )
             {
                 Sound.Play( "audio/select.sound" );
@@ -423,6 +424,7 @@
         if ( Input.EscapePressed && IsMenuOpen )
         {
             IsMenuOpen = false;
+            Log.Info( "[BasicMenu] Escape pressed. Menu closed." );
         }
     }
 
