@@ -26,20 +26,20 @@ public partial class Player : Component, Component.INetworkSpawn
 
 	protected override void OnAwake()
 	{
+		Log.Info( $"[Player] OnAwake called. IsProxy={Network.IsProxy}" );
 		_camera = Scene.GetAllComponents<CameraComponent>().FirstOrDefault( x => x.IsMainCamera );
 
 		if ( !Network.IsProxy )
 		{
-			// TODO: This should be moved off of the player and moved globally
-			PlayerHud.Enabled = true;
-			PlayerTabMenu.Enabled = true;
-			LeaderBoard.Enabled = true;
+			Log.Info( $"[Player] Enabling UI. HUD={PlayerHud != null} Tab={PlayerTabMenu != null} LB={LeaderBoard != null} BM={BasicMenu != null} DS={DeathScreen != null} MOTD={MOTD != null} Phone={Phone != null}" );
+
+			if ( PlayerHud != null ) PlayerHud.Enabled = true;
+			if ( PlayerTabMenu != null ) PlayerTabMenu.Enabled = true;
+			if ( LeaderBoard != null ) LeaderBoard.Enabled = true;
 			if ( MOTD != null ) MOTD.Enabled = true;
 			if ( DeathScreen != null ) DeathScreen.Enabled = true;
 			if ( BasicMenu != null ) BasicMenu.Enabled = true;
 			if ( Phone != null ) Phone.Enabled = true;
-
-			Log.Info( $"[Player] UI enabled - BasicMenu: {BasicMenu != null}, LeaderBoard: {LeaderBoard != null}, Phone: {Phone != null}" );
 		}
 	}
 
