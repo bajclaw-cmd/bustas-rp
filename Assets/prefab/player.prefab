@@ -184,6 +184,12 @@
           "component_type": "CitizenAnimationHelper"
         },
         "Balance": 500,
+        "BasicMenu": {
+          "_type": "component",
+          "component_id": "66371a07-fbb7-48a3-90fb-66f40db9152e",
+          "go": "ad6ed4b5-d799-468d-a0e1-546cb904eaa8",
+          "component_type": "BasicMenu"
+        },
         "CanOwnDoors": [],
         "CharacterController": {
           "_type": "component",
@@ -191,8 +197,19 @@
           "go": "2f0c5e5d-2852-453b-8cda-f6bb92e65678",
           "component_type": "CharacterController"
         },
-        "Collider": null,
+        "Collider": {
+          "_type": "component",
+          "component_id": "cfb0d94e-cd3d-487d-bba9-ae064622a37a",
+          "go": "2e001bd4-644b-4c08-9c34-ebb6fba6c34e",
+          "component_type": "BoxCollider"
+        },
         "Dead": false,
+        "DeathScreen": {
+          "_type": "component",
+          "component_id": "d8a1b2c3-4e5f-4a7b-8c9d-1a2b3c4d5e6f",
+          "go": "ad6ed4b5-d799-468d-a0e1-546cb904eaa8",
+          "component_type": "DeathScreen"
+        },
         "DefaultItems": [
           "weapons/default/hands/hands.weapon",
           "weapons/default/camera/camera.weapon"
@@ -213,6 +230,12 @@
           "component_type": "LeaderBoard"
         },
         "MaxHealth": 100,
+        "MOTD": {
+          "_type": "component",
+          "component_id": "e9b2c3d4-5f6a-4b8c-9d0e-2b3c4d5e6f7a",
+          "go": "ad6ed4b5-d799-468d-a0e1-546cb904eaa8",
+          "component_type": "MOTD"
+        },
         "NoClipSpeed": 500,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
@@ -231,6 +254,12 @@
           "component_id": "c37f901d-9dcc-4287-ac82-22e6b6bf1ceb",
           "go": "ad6ed4b5-d799-468d-a0e1-546cb904eaa8",
           "component_type": "PlayerHUD"
+        },
+        "Phone": {
+          "_type": "component",
+          "component_id": "f0c3d4e5-6a7b-4c9d-0e1f-3c4d5e6f7a8b",
+          "go": "ad6ed4b5-d799-468d-a0e1-546cb904eaa8",
+          "component_type": "Phone"
         },
         "RunMoveSpeed": 175,
         "SprintMoveSpeed": 300,
@@ -319,135 +348,7 @@
             "OnComponentDestroy": null,
             "OnComponentDisabled": null,
             "OnComponentEnabled": null,
-            "OnComponentFixedUpdate": {
-              "__version": 9,
-              "__guid": "c56d28f3-33ce-4f1f-8c8b-c5904cd8255a",
-              "__changeId": 0,
-              "UserData": {
-                "Title": "On Component Fixed Update",
-                "ReferencedComponentTypes": [
-                  "BasicMenu"
-                ]
-              },
-              "Variables": [],
-              "Nodes": [
-                {
-                  "Id": 0,
-                  "Type": "input",
-                  "UserData": {
-                    "Position": "-144,0"
-                  }
-                },
-                {
-                  "Id": 1,
-                  "Type": "if",
-                  "UserData": {
-                    "Position": "272,0"
-                  }
-                },
-                {
-                  "Id": 2,
-                  "Type": "input.down",
-                  "UserData": {
-                    "Position": "-0,64"
-                  }
-                },
-                {
-                  "Id": 6,
-                  "Type": "property",
-                  "Properties": {
-                    "_name": "Enabled",
-                    "_type": "Sandbox.Component"
-                  },
-                  "UserData": {
-                    "Position": "704,-64"
-                  }
-                },
-                {
-                  "Id": 7,
-                  "Type": "property",
-                  "Properties": {
-                    "_name": "Enabled",
-                    "_type": "Sandbox.Component"
-                  },
-                  "UserData": {
-                    "Position": "720,128"
-                  }
-                },
-                {
-                  "Id": 8,
-                  "Type": "scene.get",
-                  "Properties": {
-                    "T": "BasicMenu"
-                  },
-                  "UserData": {
-                    "Position": "496,32"
-                  }
-                }
-              ],
-              "Links": [
-                {
-                  "SrcId": 0,
-                  "SrcName": "_signal",
-                  "DstId": 1,
-                  "DstName": "_signal"
-                },
-                {
-                  "SrcId": 2,
-                  "SrcName": "_result",
-                  "DstId": 1,
-                  "DstName": "condition"
-                },
-                {
-                  "Id": 12,
-                  "Value": "SpawnMenu",
-                  "DstId": 2,
-                  "DstName": "action"
-                },
-                {
-                  "SrcId": 1,
-                  "SrcName": "true",
-                  "DstId": 6,
-                  "DstName": "_signal"
-                },
-                {
-                  "SrcId": 8,
-                  "SrcName": "_result",
-                  "DstId": 6,
-                  "DstName": "_target"
-                },
-                {
-                  "Id": 13,
-                  "Value": true,
-                  "DstId": 6,
-                  "DstName": "_value"
-                },
-                {
-                  "SrcId": 1,
-                  "SrcName": "false",
-                  "DstId": 7,
-                  "DstName": "_signal"
-                },
-                {
-                  "SrcId": 8,
-                  "SrcName": "_result",
-                  "DstId": 7,
-                  "DstName": "_target"
-                },
-                {
-                  "Id": 14,
-                  "Value": false,
-                  "DstId": 7,
-                  "DstName": "_value"
-                },
-                {
-                  "SrcId": 0,
-                  "SrcName": "_target",
-                  "DstId": 8,
-                  "DstName": "_this"
-                }
-              ]
-            },
+            "OnComponentFixedUpdate": null,
             "OnComponentStart": {
               "__version": 9,
               "__guid": "66e36109-b932-4366-bccb-5ccfa0d61af1",
@@ -844,6 +745,49 @@
             "OnComponentFixedUpdate": null,
             "OnComponentStart": null,
             "OnComponentUpdate": null
+          },
+          {
+            "__type": "DeathScreen",
+            "__guid": "d8a1b2c3-4e5f-4a7b-8c9d-1a2b3c4d5e6f",
+            "__enabled": false,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "PlayerPrefab": {
+              "_type": "gameobject",
+              "go": "2f0c5e5d-2852-453b-8cda-f6bb92e65678"
+            }
+          },
+          {
+            "__type": "MOTD",
+            "__guid": "e9b2c3d4-5f6a-4b8c-9d0e-2b3c4d5e6f7a",
+            "__enabled": false,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null
+          },
+          {
+            "__type": "Phone",
+            "__guid": "f0c3d4e5-6a7b-4c9d-0e1f-3c4d5e6f7a8b",
+            "__enabled": false,
+            "OnComponentDestroy": null,
+            "OnComponentDisabled": null,
+            "OnComponentEnabled": null,
+            "OnComponentFixedUpdate": null,
+            "OnComponentStart": null,
+            "OnComponentUpdate": null,
+            "Player": {
+              "_type": "component",
+              "component_id": "10039fed-00a3-4ce6-8416-281a841a2ee3",
+              "go": "2f0c5e5d-2852-453b-8cda-f6bb92e65678",
+              "component_type": "Player"
+            }
           }
         ]
       },
